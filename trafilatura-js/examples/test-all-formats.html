@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trafilatura.js - 格式化器完整测试</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      line-height: 1.6;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      font-size: 1.2em;
+      opacity: 0.9;
+    }
+
+    .controls {
+      padding: 20px 30px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #059669;
+    }
+
+    .btn-warning {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .btn-info {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .format-selector {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .format-btn {
+      padding: 8px 16px;
+      border: 2px solid #667eea;
+      background: white;
+      color: #667eea;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+    }
+
+    .format-btn.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .format-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .test-section {
+      margin-bottom: 40px;
+    }
+
+    .test-section h2 {
+      color: #333;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #667eea;
+    }
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .test-card {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      background: #fafafa;
+      transition: all 0.3s;
+    }
+
+    .test-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+
+    .test-card h3 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 1.2em;
+    }
+
+    .test-card p {
+      color: #666;
+      margin-bottom: 15px;
+      font-size: 0.9em;
+    }
+
+    .test-card button {
+      width: 100%;
+    }
+
+    .result-panel {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      max-height: 600px;
+      overflow: auto;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #444;
+    }
+
+    .result-title {
+      color: #10b981;
+      font-weight: 600;
+      font-size: 1.1em;
+    }
+
+    .result-meta {
+      display: flex;
+      gap: 15px;
+      font-size: 0.9em;
+    }
+
+    .result-meta span {
+      color: #888;
+    }
+
+    .result-meta .success {
+      color: #10b981;
+    }
+
+    .result-meta .warning {
+      color: #f59e0b;
+    }
+
+    .result-content {
+      color: #d4d4d4;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2.5em;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      background: #10b981;
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      animation: slideIn 0.3s ease-out;
+      z-index: 1000;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .comparison-view {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .comparison-item {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .comparison-header {
+      background: #667eea;
+      color: white;
+      padding: 15px;
+      font-weight: 600;
+    }
+
+    .comparison-content {
+      padding: 15px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow: auto;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 Trafilatura.js 完整测试套件</h1>
+      <p>浏览器环境下的真实集成测试 - 所有格式化器</p>
+    </header>
+
+    <div class="controls">
+      <button class="btn btn-primary" onclick="runAllTests()">
+        <span id="run-all-text">运行所有测试</span>
+      </button>
+      <button class="btn btn-success" onclick="clearResults()">清除结果</button>
+      <button class="btn btn-warning" onclick="runPerformanceTest()">性能测试</button>
+      <button class="btn btn-info" onclick="compareFormats()">格式对比</button>
+      
+      <div class="format-selector" style="margin-left: auto;">
+        <button class="format-btn active" data-format="markdown" onclick="selectFormat('markdown')">Markdown</button>
+        <button class="format-btn" data-format="xml" onclick="selectFormat('xml')">XML-TEI</button>
+        <button class="format-btn" data-format="json" onclick="selectFormat('json')">JSON</button>
+        <button class="format-btn" data-format="html" onclick="selectFormat('html')">HTML</button>
+        <button class="format-btn" data-format="csv" onclick="selectFormat('csv')">CSV</button>
+        <button class="format-btn" data-format="txt" onclick="selectFormat('txt')">TXT</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- 统计信息 -->
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value" id="total-tests">0</div>
+          <div class="stat-label">总测试数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="passed-tests">0</div>
+          <div class="stat-label">通过</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="failed-tests">0</div>
+          <div class="stat-label">失败</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="avg-time">0ms</div>
+          <div class="stat-label">平均耗时</div>
+        </div>
+      </div>
+
+      <!-- 测试用例 -->
+      <div class="test-section">
+        <h2>📝 测试场景</h2>
+        <div class="test-grid">
+          <div class="test-card">
+            <h3>简单博客文章</h3>
+            <p>包含标题、段落、列表、代码、引用等基础元素</p>
+            <button class="btn btn-primary" onclick="testBlogPost()">运行测试</button>
+          </div>
+
+          <div class="test-card">
+            <h3>带表格的新闻</h3>
+            <p>测试表格提取和格式化能力</p>
+            <button class="btn btn-primary" onclick="testNewsWithTable()">运行测试</button>
+          </div>
+
+          <div class="test-card">
+            <h3>学术文章</h3>
+            <p>复杂结构，适合XML-TEI格式</p>
+            <button class="btn btn-primary" onclick="testAcademicArticle()">运行测试</button>
+          </div>
+
+          <div class="test-card">
+            <h3>带图片文章</h3>
+            <p>测试图片提取和alt文本处理</p>
+            <button class="btn btn-primary" onclick="testArticleWithImages()">运行测试</button>
+          </div>
+
+          <div class="test-card">
+            <h3>复杂格式文章</h3>
+            <p>嵌套列表、多种格式化标记</p>
+            <button class="btn btn-primary" onclick="testComplexFormat()">运行测试</button>
+          </div>
+
+          <div class="test-card">
+            <h3>当前页面</h3>
+            <p>提取本页面内容进行测试</p>
+            <button class="btn btn-primary" onclick="testCurrentPage()">运行测试</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 结果显示区域 -->
+      <div id="results-container"></div>
+    </div>
+  </div>
+
+  <!-- 引入构建后的库 -->
+  <script src="../dist/trafilatura.umd.js"></script>
+  
+  <script>
+    // 全局变量
+    let selectedFormat = 'markdown';
+    let testResults = [];
+    let totalTests = 0;
+    let passedTests = 0;
+    let failedTests = 0;
+
+    // 格式选择
+    function selectFormat(format) {
+      selectedFormat = format;
+      document.querySelectorAll('.format-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.format === format);
+      });
+      showToast(`已切换到 ${format.toUpperCase()} 格式`);
+    }
+
+    // 显示提示
+    function showToast(message, duration = 2000) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, duration);
+    }
+
+    // 更新统计
+    function updateStats() {
+      document.getElementById('total-tests').textContent = totalTests;
+      document.getElementById('passed-tests').textContent = passedTests;
+      document.getElementById('failed-tests').textContent = failedTests;
+      
+      if (testResults.length > 0) {
+        const avgTime = testResults.reduce((sum, r) => sum + r.duration, 0) / testResults.length;
+        document.getElementById('avg-time').textContent = Math.round(avgTime) + 'ms';
+      }
+    }
+
+    // 显示结果
+    function displayResult(title, content, duration, success = true) {
+      const container = document.getElementById('results-container');
+      
+      const resultPanel = document.createElement('div');
+      resultPanel.className = 'result-panel';
+      
+      resultPanel.innerHTML = `
+        <div class="result-header">
+          <div class="result-title">${success ? '✅' : '❌'} ${title}</div>
+          <div class="result-meta">
+            <span>格式: <span class="${success ? 'success' : 'warning'}">${selectedFormat.toUpperCase()}</span></span>
+            <span>耗时: <span class="success">${duration}ms</span></span>
+            <span>长度: <span class="success">${content.length} 字符</span></span>
+          </div>
+        </div>
+        <div class="result-content">${escapeHtml(content.substring(0, 3000))}${content.length > 3000 ? '\n\n... (内容过长，仅显示前3000字符)' : ''}</div>
+      `;
+      
+      container.insertBefore(resultPanel, container.firstChild);
+      
+      // 记录结果
+      testResults.push({ title, format: selectedFormat, duration, success, length: content.length });
+      totalTests++;
+      if (success) passedTests++;
+      else failedTests++;
+      
+      updateStats();
+    }
+
+    // HTML转义
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 测试辅助函数
+    async function runTest(name, html) {
+      try {
+        const startTime = performance.now();
+        
+        const result = await Trafilatura.extract(html, {
+          output_format: selectedFormat,
+          with_metadata: true,
+          include_formatting: true,
+          include_links: true,
+          include_images: true,
+        });
+        
+        const endTime = performance.now();
+        const duration = Math.round(endTime - startTime);
+        
+        if (result) {
+          displayResult(name, result, duration, true);
+          return { success: true, duration };
+        } else {
+          displayResult(name, '提取失败：返回null', duration, false);
+          return { success: false, duration };
+        }
+      } catch (error) {
+        displayResult(name, `错误: ${error.message}\n${error.stack}`, 0, false);
+        return { success: false, duration: 0 };
+      }
+    }
+
+    // 测试用例1：简单博客
+    async function testBlogPost() {
+      const html = `
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>JavaScript学习指南</title>
+  <meta name="author" content="技术博主">
+  <meta name="description" content="全面的JavaScript学习路径">
+</head>
+<body>
+  <article>
+    <h1>JavaScript学习指南</h1>
+    <p>JavaScript是现代Web开发的核心技术。本文将介绍系统的学习方法。</p>
+    
+    <h2>基础概念</h2>
+    <p>首先需要理解以下核心概念：</p>
+    <ul>
+      <li>变量和数据类型</li>
+      <li>函数和闭包</li>
+      <li>原型和继承</li>
+      <li>异步编程</li>
+    </ul>
+    
+    <h2>学习路径</h2>
+    <ol>
+      <li>掌握JavaScript基础语法</li>
+      <li>理解DOM和BOM</li>
+      <li>学习ES6+新特性</li>
+      <li>掌握现代框架</li>
+    </ol>
+    
+    <blockquote>
+      <p>实践是最好的学习方法。</p>
+    </blockquote>
+    
+    <pre><code>
+// Hello World
+console.log('Hello, JavaScript!');
+    </code></pre>
+  </article>
+</body>
+</html>
+      `;
+      
+      await runTest('简单博客文章', html);
+    }
+
+    // 测试用例2：带表格的新闻
+    async function testNewsWithTable() {
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>2023科技报告</title>
+  <meta name="author" content="科技记者">
+</head>
+<body>
+  <article>
+    <h1>2023年科技发展报告</h1>
+    <p>本报告全面分析了主要科技领域在2023年的发展趋势和市场表现。通过对人工智能、云计算、物联网、区块链等关键技术领域的深入研究，我们发现科技创新正在以前所未有的速度推动社会进步和经济发展。</p>
+    
+    <h2>主要技术领域</h2>
+    <p>以下表格展示了各技术领域的关键指标数据：</p>
+    <table>
+      <thead>
+        <tr>
+          <th>领域</th>
+          <th>年增长率</th>
+          <th>市场规模</th>
+          <th>从业人数</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>人工智能</td>
+          <td>45%</td>
+          <td>$500B</td>
+          <td>280万</td>
+        </tr>
+        <tr>
+          <td>云计算</td>
+          <td>32%</td>
+          <td>$800B</td>
+          <td>450万</td>
+        </tr>
+        <tr>
+          <td>物联网</td>
+          <td>28%</td>
+          <td>$350B</td>
+          <td>320万</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <p>从数据可以看出，人工智能领域的增长最为迅速，年增长率达到45%，这主要得益于深度学习技术的突破和大模型的广泛应用。云计算虽然增速相对较慢，但市场规模最大，已经成为企业数字化转型的基础设施。</p>
+    
+    <h2>未来展望</h2>
+    <p>预计在未来三年内，这些技术领域将继续保持强劲的增长势头，并且相互融合，创造出更多创新的应用场景。</p>
+  </article>
+</body>
+</html>
+      `;
+      
+      await runTest('带表格的新闻文章', html);
+    }
+
+    // 测试用例3：学术文章
+    async function testAcademicArticle() {
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>深度学习研究综述</title>
+  <meta name="author" content="研究员">
+  <meta name="keywords" content="深度学习,神经网络,AI">
+</head>
+<body>
+  <article>
+    <h1>深度学习在NLP中的应用</h1>
+    
+    <h2>摘要</h2>
+    <p>本文综述了深度学习技术在自然语言处理领域的最新进展。</p>
+    
+    <h2>1. 引言</h2>
+    <p>自然语言处理（NLP）是人工智能的重要分支。</p>
+    
+    <h2>2. 相关工作</h2>
+    <p>Transformer架构的提出极大地推动了NLP的发展。</p>
+    
+    <blockquote cite="Vaswani et al., 2017">
+      <p>Attention机制是Transformer的核心。</p>
+    </blockquote>
+    
+    <h2>3. 结论</h2>
+    <p>深度学习方法取得了显著成果。</p>
+    
+    <h2>参考文献</h2>
+    <ol>
+      <li>Vaswani et al. (2017). Attention is All You Need.</li>
+      <li>Devlin et al. (2018). BERT.</li>
+    </ol>
+  </article>
+</body>
+</html>
+      `;
+      
+      await runTest('学术文章', html);
+    }
+
+    // 测试用例4：带图片
+    async function testArticleWithImages() {
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>自然风光摄影</title>
+  <meta name="description" content="专业摄影师分享自然风光拍摄经验">
+</head>
+<body>
+  <article>
+    <h1>自然风光摄影技巧完全指南</h1>
+    <p>自然风光摄影是一门艺术，也是一门技术。它需要摄影师不仅要有敏锐的观察力和审美眼光，还要掌握相机的各种技术参数和拍摄技巧。本文将系统地介绍如何捕捉大自然的美丽瞬间，帮助摄影爱好者提升作品质量。</p>
+    
+    <h2>光线的运用</h2>
+    <p>光线是摄影的灵魂。在自然风光摄影中，黄金时段（日出后和日落前的一小时）提供了最柔和、最温暖的光线。这个时候的光线角度较低，能够营造出层次丰富的画面效果。</p>
+    
+    <figure>
+      <img src="https://example.com/mountain.jpg" alt="壮丽的山峰">
+      <figcaption>喜马拉雅山脉在日出时分的壮丽景象</figcaption>
+    </figure>
+    
+    <p>如图所示，山峰在日出时分最为壮观。侧光能够凸显山体的纹理和立体感，金色的阳光给画面增添了温暖的色调。拍摄这样的场景需要提前到达拍摄地点，做好充分的准备工作。</p>
+    
+    <h2>构图原则</h2>
+    <p>好的构图是成功作品的基础。三分法是最常用的构图方法，将画面分成九宫格，把主体放在交叉点上。此外，引导线、对称、框架等构图技巧也能让照片更具视觉冲击力。</p>
+    
+    <h2>拍摄技巧</h2>
+    <p>以下是一些实用的拍摄技巧建议：</p>
+    <ul>
+      <li>选择合适的光线：优先选择黄金时段拍摄，避免正午的强光</li>
+      <li>寻找有趣的构图：运用三分法、引导线等构图原则</li>
+      <li>使用三脚架：保证画面稳定，特别是在长曝光时必不可少</li>
+      <li>调整曝光参数：根据现场光线灵活调整ISO、光圈和快门速度</li>
+      <li>使用滤镜：偏振镜可以减少反光，渐变灰滤镜平衡天地光比</li>
+    </ul>
+    
+    <h2>后期处理</h2>
+    <p>适当的后期处理可以让照片锦上添花。但要注意保持画面的自然感，不要过度调整导致失真。主要的后期工作包括调整曝光、增强对比度、优化色彩平衡等。</p>
+  </article>
+</body>
+</html>
+      `;
+      
+      await runTest('带图片的文章', html);
+    }
+
+    // 测试用例5：复杂格式
+    async function testComplexFormat() {
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Markdown语法指南</title>
+</head>
+<body>
+  <article>
+    <h1>Markdown完全指南</h1>
+    
+    <h2>文本格式</h2>
+    <p>支持<strong>粗体</strong>、<em>斜体</em>和<del>删除线</del>。</p>
+    
+    <h3>列表</h3>
+    <ul>
+      <li>项目一</li>
+      <li>项目二
+        <ul>
+          <li>子项目2.1</li>
+          <li>子项目2.2</li>
+        </ul>
+      </li>
+      <li>项目三</li>
+    </ul>
+    
+    <h3>代码</h3>
+    <p>内联代码：<code>console.log()</code></p>
+    
+    <pre><code class="language-python">
+def hello():
+    print("Hello, World!")
+    </code></pre>
+    
+    <h2>链接</h2>
+    <p>访问<a href="https://example.com">示例网站</a>。</p>
+    
+    <hr>
+    
+    <p>以上是Markdown的基本语法。</p>
+  </article>
+</body>
+</html>
+      `;
+      
+      await runTest('复杂格式文章', html);
+    }
+
+    // 测试用例6：当前页面
+    async function testCurrentPage() {
+      const html = document.documentElement.outerHTML;
+      await runTest('当前页面内容', html);
+    }
+
+    // 运行所有测试
+    async function runAllTests() {
+      const runBtn = document.getElementById('run-all-text');
+      runBtn.innerHTML = '<span class="loading"></span> 运行中...';
+      
+      clearResults();
+      
+      const tests = [
+        testBlogPost,
+        testNewsWithTable,
+        testAcademicArticle,
+        testArticleWithImages,
+        testComplexFormat,
+      ];
+      
+      for (const test of tests) {
+        await test();
+        await new Promise(resolve => setTimeout(resolve, 100)); // 短暂延迟
+      }
+      
+      runBtn.textContent = '运行所有测试';
+      showToast(`✅ 完成！共${totalTests}个测试，通过${passedTests}个`);
+    }
+
+    // 清除结果
+    function clearResults() {
+      document.getElementById('results-container').innerHTML = '';
+      testResults = [];
+      totalTests = 0;
+      passedTests = 0;
+      failedTests = 0;
+      updateStats();
+    }
+
+    // 性能测试
+    async function runPerformanceTest() {
+      showToast('开始性能测试...', 1000);
+      
+      const testHtml = `
+<!DOCTYPE html>
+<html><head><title>测试</title></head>
+<body><article><h1>标题</h1><p>${'测试内容'.repeat(100)}</p></article></body>
+</html>
+      `;
+      
+      const formats = ['txt', 'markdown', 'xml', 'json', 'html', 'csv'];
+      const iterations = 10;
+      const results = {};
+      
+      for (const format of formats) {
+        const times = [];
+        for (let i = 0; i < iterations; i++) {
+          const start = performance.now();
+          await Trafilatura.extract(testHtml, { output_format: format });
+          const end = performance.now();
+          times.push(end - start);
+        }
+        results[format] = {
+          avg: times.reduce((a, b) => a + b, 0) / times.length,
+          min: Math.min(...times),
+          max: Math.max(...times),
+        };
+      }
+      
+      let report = '性能测试报告（每个格式运行' + iterations + '次）\n\n';
+      report += '格式      平均耗时    最小      最大\n';
+      report += '━'.repeat(50) + '\n';
+      
+      for (const [format, stats] of Object.entries(results)) {
+        report += `${format.padEnd(10)}${Math.round(stats.avg)}ms${(' '.repeat(8))}${Math.round(stats.min)}ms${(' '.repeat(6))}${Math.round(stats.max)}ms\n`;
+      }
+      
+      displayResult('性能测试', report, 0, true);
+    }
+
+    // 格式对比
+    async function compareFormats() {
+      showToast('开始格式对比...', 1000);
+      
+      const testHtml = `
+<!DOCTYPE html>
+<html>
+<head><title>测试文章</title></head>
+<body>
+  <article>
+    <h1>主标题</h1>
+    <p>这是一段测试文本。</p>
+    <ul>
+      <li>列表项1</li>
+      <li>列表项2</li>
+    </ul>
+    <blockquote><p>引用内容</p></blockquote>
+  </article>
+</body>
+</html>
+      `;
+      
+      const container = document.getElementById('results-container');
+      const comparisonDiv = document.createElement('div');
+      comparisonDiv.className = 'result-panel';
+      
+      let html = '<div class="result-header"><div class="result-title">📊 格式对比</div></div>';
+      html += '<div class="comparison-view">';
+      
+      const formats = ['markdown', 'xml', 'json', 'html', 'csv', 'txt'];
+      
+      for (const format of formats) {
+        const result = await Trafilatura.extract(testHtml, { 
+          output_format: format,
+          with_metadata: true 
+        });
+        
+        html += `
+          <div class="comparison-item">
+            <div class="comparison-header">${format.toUpperCase()}</div>
+            <div class="comparison-content">
+              <pre>${escapeHtml(result ? result.substring(0, 500) : '无输出')}</pre>
+            </div>
+          </div>
+        `;
+      }
+      
+      html += '</div>';
+      comparisonDiv.innerHTML = html;
+      container.insertBefore(comparisonDiv, container.firstChild);
+    }
+
+    // 页面加载完成后的初始化
+    window.addEventListener('load', () => {
+      console.log('Trafilatura.js 测试套件已加载');
+      console.log('可用的API:', Trafilatura);
+      showToast('测试套件已就绪！', 2000);
+    });
+  </script>
+</body>
+</html>
+

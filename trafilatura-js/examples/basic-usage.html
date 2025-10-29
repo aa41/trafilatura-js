@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trafilatura.js - 基础使用示例</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .panel {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    pre {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 14px;
+    }
+    .article-content {
+      background: white;
+      padding: 20px;
+      border-radius: 4px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 Trafilatura.js 基础使用示例</h1>
+  <p>这是一个演示如何使用 Trafilatura.js 提取网页内容的示例。</p>
+
+  <div class="container">
+    <div class="panel">
+      <h2>示例文章</h2>
+      <article class="article-content" id="sampleArticle">
+        <header>
+          <h1>人工智能的未来发展</h1>
+          <div class="meta">
+            <span class="author">作者：张三</span>
+            <time datetime="2024-01-15">发布于：2024年1月15日</time>
+          </div>
+        </header>
+
+        <p>人工智能（AI）正在快速改变我们的世界。从自动驾驶汽车到智能助手，AI 技术已经深入到我们生活的方方面面。</p>
+
+        <h2>主要应用领域</h2>
+        <ul>
+          <li>医疗诊断</li>
+          <li>金融分析</li>
+          <li>自然语言处理</li>
+          <li>计算机视觉</li>
+        </ul>
+
+        <blockquote>
+          "人工智能是新的电力。" - 吴恩达
+        </blockquote>
+
+        <h2>未来展望</h2>
+        <p>随着技术的不断进步，AI 将在更多领域发挥重要作用。我们需要思考如何负责任地开发和使用这些技术。</p>
+
+        <img src="/images/ai-future.jpg" alt="AI 未来" />
+
+        <p>总而言之，人工智能的发展将继续加速，为人类社会带来深刻变革。</p>
+      </article>
+
+      <nav class="sidebar">
+        <h3>相关链接</h3>
+        <ul>
+          <li><a href="#">AI 资讯</a></li>
+          <li><a href="#">技术博客</a></li>
+          <li><a href="#">研究论文</a></li>
+        </ul>
+      </nav>
+
+      <footer>
+        <p>&copy; 2024 示例网站</p>
+      </footer>
+    </div>
+
+    <div class="panel">
+      <h2>提取控制</h2>
+      <button onclick="runExtraction()">🎯 提取内容</button>
+      
+      <h3>提取结果：</h3>
+      <pre id="output">点击上方按钮开始提取...</pre>
+    </div>
+  </div>
+
+  <!-- 临时使用 inline script，实际使用时应引入构建后的库 -->
+  <script type="module">
+    // TODO: 实际使用时应该是:
+    // import { extract, extractWithMetadata } from '../dist/trafilatura.esm.js';
+    
+    // 目前仅演示 UI，实际提取功能待实现
+    window.runExtraction = function() {
+      const output = document.getElementById('output');
+      output.textContent = '正在提取...\n\n';
+      
+      setTimeout(() => {
+        // 模拟提取结果
+        const result = {
+          title: '人工智能的未来发展',
+          author: '张三',
+          date: '2024-01-15',
+          text: document.querySelector('.article-content').textContent.trim(),
+          wordCount: 150,
+        };
+        
+        output.textContent = JSON.stringify(result, null, 2);
+      }, 500);
+    };
+  </script>
+</body>
+</html>
+
