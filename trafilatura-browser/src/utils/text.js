@@ -366,6 +366,39 @@ export function isImageFile(imagesrc) {
   return IMAGE_EXTENSION.test(imagesrc);
 }
 
+/**
+ * 检查元素是否是有效的图片元素
+ * 对应Python函数: is_image_element(element) - utils.py:349-360
+ * 
+ * @param {Element} element - 要检查的元素
+ * @returns {boolean} 如果是有效的图片元素则返回true
+ */
+export function isImageElement(element) {
+  if (!element) {
+    return false;
+  }
+  
+  // 对应Python: for attr in ("data-src", "src"):
+  for (const attr of ['data-src', 'src']) {
+    const src = element.getAttribute(attr) || '';
+    if (isImageFile(src)) {
+      return true;
+    }
+  }
+  
+  // 对应Python: for attr, value in element.attrib.items():
+  for (const attr of element.getAttributeNames()) {
+    if (attr.startsWith('data-src')) {
+      const value = element.getAttribute(attr) || '';
+      if (isImageFile(value)) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
 // 导出缓存实例（用于测试和调试）
 export const _caches = {
   trim: trimCache,

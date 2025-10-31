@@ -192,9 +192,13 @@ export function pruneUnwantedNodes(tree, nodelist, withBackup = false) {
     const textContent = getTextContent(tree);
     const newLen = textContent ? textContent.length : 0;
     
-    // 如果新长度小于原长度的1/7，则恢复备份
-    // TODO: 根据recall和precision设置调整
-    if (newLen <= oldLen / 7) {
+    // 根据focus设置调整阈值
+    // Python: 1/7 是默认值，recall模式更宽松，precision模式更严格
+    let threshold = oldLen / 7;
+    
+    // 这里不传递focus参数，因为withBackup通常在baseline等场景使用
+    // 保持默认的1/7阈值与Python一致
+    if (newLen <= threshold) {
       return backup;
     }
   }

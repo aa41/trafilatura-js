@@ -35,7 +35,8 @@ import {
   handleQuotes,
   handleCodeBlocks,
   handleTable,
-  handleImage
+  handleImage,
+  flushTail
 } from './handlers/index.js';
 
 // ============================================================================
@@ -285,6 +286,8 @@ function _extract(tree, options) {
       const processedElem = handleTextElem(elem, potentialTags, options);
       if (processedElem) {
         resultBody.appendChild(processedElem);
+        // 刷新tail: 将临时存储的_tail转换为真正的文本节点
+        flushTail(processedElem);
       }
     }
     
@@ -532,6 +535,8 @@ export function recoverWildText(tree, resultBody, options, potentialTags = new S
     const processedElem = handleTextElem(elem, potentialTags, options);
     if (processedElem !== null) {
       resultBody.appendChild(processedElem);
+      // 刷新tail: 将临时存储的_tail转换为真正的文本节点
+      flushTail(processedElem);
     }
   }
   

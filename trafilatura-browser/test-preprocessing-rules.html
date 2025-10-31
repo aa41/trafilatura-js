@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>预处理规则测试 - Preprocessing Rules Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success { 
+            color: #27ae60; 
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .error { 
+            color: #e74c3c; 
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .code {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .info {
+            background: #d5f4e6;
+            padding: 15px;
+            border-left: 4px solid #27ae60;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 预处理规则系统测试</h1>
+    <p class="info">
+        <strong>预处理规则</strong>允许在HTML提取前对节点进行自定义处理，类似于 
+        <a href="https://github.com/mixmark-io/turndown" target="_blank">Turndown 的 addRule</a> 功能。
+    </p>
+    
+    <div class="test-section">
+        <h2>测试 1: 删除广告元素</h2>
+        <p>使用CSS选择器删除所有广告相关元素</p>
+        <div id="test1-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试 2: 转换视频元素为链接</h2>
+        <p>使用自定义函数将 &lt;video&gt; 元素转换为文本链接</p>
+        <div id="test2-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试 3: 修复懒加载图片</h2>
+        <p>将 data-lazy-src 属性移动到 src</p>
+        <div id="test3-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试 4: 链式调用多个规则</h2>
+        <p>同时应用多个规则进行复杂处理</p>
+        <div id="test4-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试 5: 使用函数过滤器</h2>
+        <p>使用自定义过滤函数精确选择节点</p>
+        <div id="test5-result"></div>
+    </div>
+
+    <script src="dist/trafilatura.browser.js"></script>
+    <script>
+        function displayResult(testId, success, message, code, extracted) {
+            const resultDiv = document.getElementById(`test${testId}-result`);
+            const statusClass = success ? 'success' : 'error';
+            const statusText = success ? '✅ 通过' : '❌ 失败';
+            
+            resultDiv.innerHTML = `
+                <p class="${statusClass}">${statusText}</p>
+                <p>${message}</p>
+                ${code ? `<div class="code">${code}</div>` : ''}
+                ${extracted ? `<div class="result">${extracted}</div>` : ''}
+            `;
+        }
+
+        // 测试 1: 删除广告元素
+        function test1() {
+            const html = `
+                <article>
+                    <h1>测试文章</h1>
+                    <div class="advertisement">这是广告内容</div>
+                    <p>这是正文内容。</p>
+                    <div class="ad-banner">横幅广告</div>
+                    <p>更多正文。</p>
+                </article>
+            `;
+            
+            const { Extractor } = Trafilatura;
+            const extractor = new Extractor({
+                format: 'markdown',
+                include_images: false
+            });
+            
+            // 添加规则：删除广告
+            extractor.addPreprocessingRule('removeAds', {
+                filter: ['.advertisement', '.ad-banner'],
+                action: (node) => null  // 返回null删除节点
+            });
+            
+            const result = Trafilatura.extract(html, extractor);
+            
+            const hasContent = result && result.includes('正文内容');
+            const noAds = result && !result.includes('广告');
+            
+            const code = `extractor.addPreprocessingRule('removeAds', {
+  filter: ['.advertisement', '.ad-banner'],
+  action: (node) => null  // 返回null删除节点
+});`;
+            
+            displayResult(1, 
+                hasContent && noAds, 
+                hasContent && noAds ? '成功删除所有广告元素' : '广告删除失败',
+                code,
+                result
+            );
+        }
+
+        // 测试 2: 转换视频元素
+        function test2() {
+            const html = `
+                <article>
+                    <h1>视频教程</h1>
+                    <p>观看下面的视频：</p>
+                    <video src="https://example.com/video.mp4" title="教学视频"></video>
+                    <p>视频结束。</p>
+                </article>
+            `;
+            
+            const { Extractor } = Trafilatura;
+            const extractor = new Extractor({
+                format: 'markdown',
+                include_images: false
+            });
+            
+            // 添加规则：转换视频为链接
+            extractor.addPreprocessingRule('convertVideo', {
+                filter: (node) => node.tagName === 'VIDEO',
+                action: (node) => {
+                    const link = document.createElement('a');
+                    link.href = node.src || node.getAttribute('src') || '#';
+                    link.textContent = `[视频: ${node.title || node.getAttribute('title') || '播放'}]`;
+                    return link;  // 返回新节点替换
+                }
+            });
+            
+            const result = Trafilatura.extract(html, extractor);
+            
+            const hasVideoLink = result && result.includes('[视频:');
+            
+            const code = `extractor.addPreprocessingRule('convertVideo', {
+  filter: (node) => node.tagName === 'VIDEO',
+  action: (node) => {
+    const link = document.createElement('a');
+    link.href = node.src;
+    link.textContent = \`[视频: \${node.title}]\`;
+    return link;  // 返回新节点替换
+  }
+});`;
+            
+            displayResult(2, 
+                hasVideoLink, 
+                hasVideoLink ? '成功将视频转换为链接' : '视频转换失败',
+                code,
+                result
+            );
+        }
+
+        // 测试 3: 修复懒加载图片
+        function test3() {
+            const html = `
+                <article>
+                    <h1>图片测试</h1>
+                    <img data-lazy-src="https://example.com/real.jpg" src="placeholder.gif" alt="测试图片">
+                    <p>图片说明</p>
+                </article>
+            `;
+            
+            const { Extractor } = Trafilatura;
+            const extractor = new Extractor({
+                format: 'markdown',
+                include_images: true
+            });
+            
+            // 添加规则：修复懒加载
+            extractor.addPreprocessingRule('fixLazyImages', {
+                filter: 'img[data-lazy-src]',
+                action: (node) => {
+                    const lazySrc = node.getAttribute('data-lazy-src');
+                    if (lazySrc) {
+                        node.setAttribute('src', lazySrc);
+                        node.removeAttribute('data-lazy-src');
+                    }
+                    // 不返回值，原地修改
+                }
+            });
+            
+            const result = Trafilatura.extract(html, extractor);
+            
+            const hasRealImage = result && result.includes('real.jpg');
+            const noPlaceholder = result && !result.includes('placeholder.gif');
+            
+            const code = `extractor.addPreprocessingRule('fixLazyImages', {
+  filter: 'img[data-lazy-src]',
+  action: (node) => {
+    node.setAttribute('src', node.getAttribute('data-lazy-src'));
+    node.removeAttribute('data-lazy-src');
+    // 不返回值，原地修改
+  }
+});`;
+            
+            displayResult(3, 
+                hasRealImage && noPlaceholder, 
+                hasRealImage && noPlaceholder ? '成功修复懒加载图片' : '图片修复失败',
+                code,
+                result
+            );
+        }
+
+        // 测试 4: 链式调用多个规则
+        function test4() {
+            const html = `
+                <article>
+                    <h1>综合测试</h1>
+                    <div class="ad">广告1</div>
+                    <p>正文段落</p>
+                    <img data-lazy-src="https://example.com/image.jpg" src="loading.gif" alt="图片">
+                    <div class="promotion">推广内容</div>
+                    <p>更多内容</p>
+                </article>
+            `;
+            
+            const { Extractor } = Trafilatura;
+            const extractor = new Extractor({
+                format: 'markdown',
+                include_images: true
+            });
+            
+            // 链式添加多个规则
+            extractor
+                .addPreprocessingRule('removeAds', {
+                    filter: ['.ad', '.promotion'],
+                    action: () => null
+                })
+                .addPreprocessingRule('fixImages', {
+                    filter: 'img[data-lazy-src]',
+                    action: (node) => {
+                        node.src = node.getAttribute('data-lazy-src');
+                        node.removeAttribute('data-lazy-src');
+                    }
+                });
+            
+            const result = Trafilatura.extract(html, extractor);
+            
+            const hasContent = result && result.includes('正文');
+            const noAds = result && !result.includes('广告') && !result.includes('推广');
+            const hasImage = result && result.includes('image.jpg');
+            
+            const code = `extractor
+  .addPreprocessingRule('removeAds', {...})
+  .addPreprocessingRule('fixImages', {...});`;
+            
+            displayResult(4, 
+                hasContent && noAds && hasImage, 
+                hasContent && noAds && hasImage ? '成功应用多个规则' : '多规则应用失败',
+                code,
+                result
+            );
+        }
+
+        // 测试 5: 使用函数过滤器
+        function test5() {
+            const html = `
+                <article>
+                    <h1>自定义过滤</h1>
+                    <div data-type="content">保留内容</div>
+                    <div data-type="ignore">忽略内容</div>
+                    <p>正文</p>
+                    <div data-type="ignore">更多忽略</div>
+                </article>
+            `;
+            
+            const { Extractor } = Trafilatura;
+            const extractor = new Extractor({
+                format: 'markdown'
+            });
+            
+            // 使用函数过滤器
+            extractor.addPreprocessingRule('removeIgnored', {
+                filter: (node) => {
+                    return node.getAttribute && node.getAttribute('data-type') === 'ignore';
+                },
+                action: () => null
+            });
+            
+            const result = Trafilatura.extract(html, extractor);
+            
+            const hasContent = result && result.includes('保留内容');
+            const noIgnored = result && !result.includes('忽略内容');
+            
+            const code = `extractor.addPreprocessingRule('removeIgnored', {
+  filter: (node) => {
+    return node.getAttribute('data-type') === 'ignore';
+  },
+  action: () => null
+});`;
+            
+            displayResult(5, 
+                hasContent && noIgnored, 
+                hasContent && noIgnored ? '成功使用函数过滤器' : '函数过滤器失败',
+                code,
+                result
+            );
+        }
+
+        // 运行所有测试
+        window.addEventListener('load', () => {
+            console.log('开始测试预处理规则功能...');
+            test1();
+            test2();
+            test3();
+            test4();
+            test5();
+            console.log('所有测试完成！');
+        });
+    </script>
+</body>
+</html>
+

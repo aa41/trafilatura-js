@@ -624,6 +624,11 @@
 </div>
 
 <div class="content">
+  <figure>
+    <img src="https://example.com/gpt4-logo.png" alt="GPT-4 Logo" title="OpenAI GPT-4">
+    <figcaption>GPT-4官方标志</figcaption>
+  </figure>
+  
   <p>3月15日，OpenAI正式发布了最新的大型语言模型GPT-4。这是继GPT-3之后的重大升级，在多项基准测试中展现出超越人类平均水平的能力。</p>
   
   <h2>主要特性</h2>
@@ -636,6 +641,7 @@
   </ul>
   
   <h2>应用前景</h2>
+  <img src="/images/gpt4-applications.jpg" alt="GPT-4应用场景" data-src="/images/gpt4-apps-hd.jpg">
   <p>专家认为，GPT-4将在教育、医疗、法律等多个领域带来革命性变化。它能够理解复杂的指令，生成高质量的内容，并在专业领域提供有价值的建议。</p>
   
   <table>
@@ -1820,7 +1826,7 @@ const promise = new Promise((resolve, reject) => {
             comments: document.getElementById("opt-comments").checked,
             tables: document.getElementById("opt-tables").checked,
             links: document.getElementById("opt-links").checked,
-            images: document.getElementById("opt-images").checked,
+            include_images: document.getElementById("opt-images").checked,
             formatting: document.getElementById("opt-formatting").checked,
             fast: document.getElementById("opt-fast").checked,
             dedup: document.getElementById("opt-dedup").checked,

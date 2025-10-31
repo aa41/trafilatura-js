@@ -72,6 +72,9 @@ export class Extractor {
     this.url_blacklist = new Set();
     this.prune_xpath = null;  // CSS选择器字符串或数组
     
+    // 预处理规则系统（类似Turndown的addRule）
+    this.preprocessing_rules = new Map();  // Map<ruleName, rule>
+    
     // 应用选项
     this._applyOptions(options);
   }
@@ -213,6 +216,114 @@ export class Extractor {
       extensive_search: extensive,
       max_date: new Date().toISOString().split('T')[0]
     };
+  }
+  
+  /**
+   * 添加预处理规则（类似Turndown的addRule）
+   * 
+   * 允许在HTML树加载后、提取前对节点进行自定义处理
+   * 参考: https://github.com/mixmark-io/turndown
+   * 
+   * @param {string} name - 规则名称（唯一标识）
+   * @param {Object} rule - 规则对象
+   * @param {string|Array|Function} rule.filter - 元素过滤器
+   *   - string: CSS选择器，如 'div.content'
+   *   - Array: CSS选择器数组，如 ['div', 'span']
+   *   - Function: 自定义过滤函数 (node, options) => boolean
+   * @param {Function} rule.action - 处理函数 (node, options) => void|Node|null
+   *   - 返回 undefined: 保持节点不变
+   *   - 返回 Node: 用新节点替换
+   *   - 返回 null: 删除节点
+   *   - 无返回值/undefined: 原地修改节点
+   * @returns {Extractor} 返回this以支持链式调用
+   * 
+   * @example
+   * // 删除所有广告
+   * extractor.addPreprocessingRule('removeAds', {
+   *   filter: '.advertisement',
+   *   action: (node) => null  // 删除节点
+   * });
+   * 
+   * @example
+   * // 转换特殊元素
+   * extractor.addPreprocessingRule('convertVideo', {
+   *   filter: (node) => node.tagName === 'VIDEO',
+   *   action: (node) => {
+   *     const link = document.createElement('a');
+   *     link.href = node.src;
+   *     link.textContent = `[视频: ${node.title || '播放'}]`;
+   *     return link;  // 替换为链接
+   *   }
+   * });
+   * 
+   * @example
+   * // 修改属性
+   * extractor.addPreprocessingRule('fixImages', {
+   *   filter: 'img[data-lazy-src]',
+   *   action: (node) => {
+   *     node.src = node.getAttribute('data-lazy-src');
+   *     node.removeAttribute('data-lazy-src');
+   *     // 不返回值，原地修改
+   *   }
+   * });
+   */
+  addPreprocessingRule(name, rule) {
+    if (!name || typeof name !== 'string') {
+      throw new Error('Rule name must be a non-empty string');
+    }
+    
+    if (!rule || typeof rule !== 'object') {
+      throw new Error('Rule must be an object with filter and action properties');
+    }
+    
+    if (!rule.filter) {
+      throw new Error('Rule must have a filter property');
+    }
+    
+    if (typeof rule.action !== 'function') {
+      throw new Error('Rule action must be a function');
+    }
+    
+    // 验证filter类型
+    const filterType = typeof rule.filter;
+    if (filterType !== 'string' && filterType !== 'function' && !Array.isArray(rule.filter)) {
+      throw new Error('Rule filter must be a string, array, or function');
+    }
+    
+    // 存储规则
+    this.preprocessing_rules.set(name, {
+      filter: rule.filter,
+      action: rule.action,
+      name: name
+    });
+    
+    return this;  // 链式调用
+  }
+  
+  /**
+   * 移除预处理规则
+   * 
+   * @param {string} name - 规则名称
+   * @returns {boolean} 是否成功移除
+   */
+  removePreprocessingRule(name) {
+    return this.preprocessing_rules.delete(name);
+  }
+  
+  /**
+   * 清空所有预处理规则
+   */
+  clearPreprocessingRules() {
+    this.preprocessing_rules.clear();
+  }
+  
+  /**
+   * 获取所有规则名称
+   * 
+   * @returns {Array<string>} 规则名称数组
+   */
+  getPreprocessingRuleNames() {
+    return Array.from(this.preprocessing_rules.keys());
   }
 }
 

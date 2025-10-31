@@ -7,7 +7,8 @@
  * @module extraction/handlers/paragraphs
  */
 
-import { processNode, handleTextNode, getElementText, setElementText, getElementTail, setElementTail } from './node-processing.js';
+import { processNode, handleTextNode, getElementText, setElementText, getElementTail, setElementTail, flushTail } from './node-processing.js';
+import { handleImage } from './images.js';
 import { textCharsTest } from '../../utils/text.js';
 import { deleteElement, stripTags, copyAttributes } from '../../utils/dom.js';
 import { P_FORMATTING } from '../../settings/constants.js';
@@ -131,14 +132,20 @@ export function handleParagraphs(element, potentialTags, options) {
       setElementTail(newsub, getElementTail(processedChild));
       
       // Python: if processed_child.tag == 'graphic':
+      // Python: image_elem = handle_image(processed_child, options)
+      // Python: if image_elem is not None: newsub = image_elem
       if (processedTag === 'graphic') {
-        // TODO: 实现handle_image
-        // Python: image_elem = handle_image(processed_child, options)
-        // if (image_elem) { newsub = image_elem; }
+        const imageElem = handleImage(processedChild, options);
+        if (imageElem !== null) {
+          newsub = imageElem;
+        }
       }
       
       // Python: processed_element.append(newsub)
       processedElement.appendChild(newsub);
+      
+      // 刷新tail: 将临时存储的_tail转换为真正的文本节点
+      flushTail(newsub);
     }
     
     // Python: child.tag = "done"

@@ -13,7 +13,8 @@ export {
   getElementText,
   setElementText,
   getElementTail,
-  setElementTail
+  setElementTail,
+  flushTail
 } from './node-processing.js';
 
 // 段落处理

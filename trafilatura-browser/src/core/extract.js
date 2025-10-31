@@ -43,6 +43,77 @@ function createDocument(metadata, result) {
 }
 
 /**
+ * 应用预处理规则到HTML树
+ * 类似Turndown的规则系统
+ * 
+ * @param {Document} tree - HTML树
+ * @param {Extractor} options - 提取器选项
+ * @returns {Document} 处理后的树
+ */
+function applyPreprocessingRules(tree, options) {
+  if (!options.preprocessing_rules || options.preprocessing_rules.size === 0) {
+    return tree;
+  }
+  
+  // 遍历所有规则
+  for (const [ruleName, rule] of options.preprocessing_rules.entries()) {
+    try {
+      let matchedNodes = [];
+      
+      // 根据filter类型获取匹配的节点
+      if (typeof rule.filter === 'string') {
+        // CSS选择器字符串
+        matchedNodes = Array.from(tree.querySelectorAll(rule.filter));
+      } else if (Array.isArray(rule.filter)) {
+        // CSS选择器数组
+        for (const selector of rule.filter) {
+          const nodes = Array.from(tree.querySelectorAll(selector));
+          matchedNodes.push(...nodes);
+        }
+      } else if (typeof rule.filter === 'function') {
+        // 自定义过滤函数
+        const allNodes = Array.from(tree.querySelectorAll('*'));
+        matchedNodes = allNodes.filter(node => {
+          try {
+            return rule.filter(node, options);
+          } catch (e) {
+            console.warn(`Error in filter function for rule '${ruleName}':`, e);
+            return false;
+          }
+        });
+      }
+      
+      // 对每个匹配的节点应用action
+      for (const node of matchedNodes) {
+        try {
+          const result = rule.action(node, options);
+          
+          // 根据返回值处理节点
+          if (result === null) {
+            // 删除节点
+            if (node.parentNode) {
+              node.parentNode.removeChild(node);
+            }
+          } else if (result && result.nodeType) {
+            // 替换为新节点
+            if (node.parentNode) {
+              node.parentNode.replaceChild(result, node);
+            }
+          }
+          // undefined或其他值：保持原样（原地修改）
+        } catch (e) {
+          console.warn(`Error in action function for rule '${ruleName}' on node:`, node, e);
+        }
+      }
+    } catch (e) {
+      console.warn(`Error applying preprocessing rule '${ruleName}':`, e);
+    }
+  }
+  
+  return tree;
+}
+
+/**
  * 内部提取函数
  * 对应Python: bare_extraction() - core.py:131-348
  * 
@@ -70,6 +141,12 @@ function internalExtraction(htmlContent, options) {
     if (!tree) {
       console.warn('Empty HTML tree');
       return null;
+    }
+
+    // 1.5. 应用预处理规则（类似Turndown的addRule）
+    // 在HTML加载后、修剪前应用自定义规则
+    if (options.preprocessing_rules && options.preprocessing_rules.size > 0) {
+      tree = applyPreprocessingRules(tree, options);
     }
 
     // 2. 用户自定义修剪（prune_xpath - 通过CSS选择器实现）
@@ -340,16 +417,22 @@ export function extract(htmlContent, userOptions = {}) {
   } else {
     // 从用户选项创建Extractor
     options = new Extractor({
-      format: userOptions.output_format || userOptions.format || 'txt',
+      format: userOptions.output_format || userOptions.format || 'markdown',
       fast: userOptions.fast || false,
       precision: userOptions.favor_precision || false,
       recall: userOptions.favor_recall || false,
       comments: userOptions.include_comments !== undefined 
         ? userOptions.include_comments 
         : true,
-      formatting: userOptions.include_formatting || false,
-      links: userOptions.include_links || false,
-      images: userOptions.include_images || false,
+      formatting: userOptions.include_formatting !== undefined
+        ? userOptions.include_formatting
+        : true,
+      links: userOptions.include_links !== undefined
+        ? userOptions.include_links
+        : true,
+      images: userOptions.include_images !== undefined
+        ? userOptions.include_images
+        : true,
       tables: userOptions.include_tables !== undefined 
         ? userOptions.include_tables 
         : true,

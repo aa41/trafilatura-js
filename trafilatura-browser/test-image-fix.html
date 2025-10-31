@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片提取测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        h1 { color: #333; }
+        h2 { color: #666; }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🔧 图片提取修复验证</h1>
+    
+    <div class="test-section">
+        <h2>测试 1: 基本图片提取</h2>
+        <div id="test1-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试 2: data-src 属性</h2>
+        <div id="test2-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试 3: 相对URL转换</h2>
+        <div id="test3-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试 4: 段落中的图片</h2>
+        <div id="test4-result"></div>
+    </div>
+
+    <script src="dist/trafilatura.browser.js"></script>
+    <script>
+        function displayResult(testId, success, message, extracted) {
+            const resultDiv = document.getElementById(`test${testId}-result`);
+            const statusClass = success ? 'success' : 'error';
+            const statusText = success ? '✅ 通过' : '❌ 失败';
+            
+            resultDiv.innerHTML = `
+                <p class="${statusClass}">${statusText}</p>
+                <p>${message}</p>
+                ${extracted ? `<pre>${extracted}</pre>` : ''}
+            `;
+        }
+
+        // 测试 1: 基本图片提取
+        function test1() {
+            const html = `
+                <article>
+                    <h1>测试文章</h1>
+                    <img src="https://example.com/image.jpg" alt="测试图片" title="图片标题">
+                    <p>这是一段文字。</p>
+                </article>
+            `;
+            
+            const result = Trafilatura.extract(html, {
+                format: 'markdown',
+                include_images: true
+            });
+            
+            const hasImage = result && result.includes('![');
+            const hasImageSrc = result && result.includes('https://example.com/image.jpg');
+            
+            displayResult(1, 
+                hasImage && hasImageSrc, 
+                hasImage ? '成功提取图片' : '未能提取图片',
+                result
+            );
+        }
+
+        // 测试 2: data-src 属性
+        function test2() {
+            const html = `
+                <article>
+                    <h1>Lazy Loading 图片</h1>
+                    <img data-src="https://example.com/lazy.png" src="placeholder.gif" alt="懒加载图片">
+                    <p>使用懒加载技术。</p>
+                </article>
+            `;
+            
+            const result = Trafilatura.extract(html, {
+                format: 'markdown',
+                include_images: true
+            });
+            
+            const hasLazyImage = result && result.includes('lazy.png');
+            const notHasPlaceholder = result && !result.includes('placeholder.gif');
+            
+            displayResult(2,
+                hasLazyImage && notHasPlaceholder,
+                hasLazyImage ? '成功提取 data-src 图片' : '未能提取 data-src',
+                result
+            );
+        }
+
+        // 测试 3: 相对URL转换
+        function test3() {
+            const html = `
+                <article>
+                    <h1>相对路径图片</h1>
+                    <img src="/images/photo.jpg" alt="相对路径">
+                    <img src="//cdn.example.com/image.png" alt="协议相对路径">
+                </article>
+            `;
+            
+            const result = Trafilatura.extract(html, {
+                format: 'markdown',
+                include_images: true,
+                url: 'https://example.com/article/123'
+            });
+            
+            const hasAbsoluteUrl = result && result.includes('https://example.com/images/photo.jpg');
+            const hasProtocol = result && result.includes('http://cdn.example.com/image.png');
+            
+            displayResult(3,
+                hasAbsoluteUrl || hasProtocol,
+                hasAbsoluteUrl ? '成功转换相对URL' : '相对URL转换可能有问题',
+                result
+            );
+        }
+
+        // 测试 4: 段落中的图片
+        function test4() {
+            const html = `
+                <article>
+                    <h1>段落包含图片</h1>
+                    <p>
+                        这是一个包含图片的段落。
+                        <img src="https://example.com/inline.jpg" alt="内联图片">
+                        图片后面还有文字。
+                    </p>
+                </article>
+            `;
+            
+            const result = Trafilatura.extract(html, {
+                format: 'markdown',
+                include_images: true
+            });
+            
+            const hasImage = result && result.includes('![内联图片](https://example.com/inline.jpg)');
+            
+            displayResult(4,
+                hasImage,
+                hasImage ? '成功提取段落中的图片' : '段落中的图片提取失败（这是之前的BUG！）',
+                result
+            );
+        }
+
+        // 运行所有测试
+        window.addEventListener('load', () => {
+            console.log('开始测试图片提取功能...');
+            test1();
+            test2();
+            test3();
+            test4();
+            console.log('所有测试完成！');
+        });
+    </script>
+</body>
+</html>
+

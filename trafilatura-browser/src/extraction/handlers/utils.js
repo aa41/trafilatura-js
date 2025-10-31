@@ -8,7 +8,7 @@
 
 import { textCharsTest } from '../../utils/text.js';
 import { copyAttributes } from '../../utils/dom.js';
-import { getElementText, setElementText, handleTextNode } from './node-processing.js';
+import { getElementText, setElementText, handleTextNode, flushTail } from './node-processing.js';
 
 /**
  * 添加子元素到现有子元素
@@ -38,6 +38,8 @@ export function addSubElement(newChildElem, subelem, processedSubchild) {
   }
   
   newChildElem.appendChild(subChildElem);
+  // 刷新tail: 将临时存储的_tail转换为真正的文本节点
+  flushTail(subChildElem);
 }
 
 /**
@@ -73,6 +75,8 @@ export function processNestedElements(child, newChildElem, options) {
       if (processedSubchild) {
         // Python: new_child_elem.append(processed_subchild)
         newChildElem.appendChild(processedSubchild);
+        // 刷新tail: 将临时存储的_tail转换为真正的文本节点
+        flushTail(processedSubchild);
       }
     } else {
       // Python: processed_subchild = handle_textnode(subelem, options, comments_fix=False)

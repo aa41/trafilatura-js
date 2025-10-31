@@ -7,9 +7,10 @@
  * @module extraction/handlers/node-processing
  */
 
-import { trim } from '../../utils/text.js';
+import { trim, isImageElement } from '../../utils/text.js';
 import { textFilter, textCharsTest } from '../../utils/text.js';
 import { copyTree } from '../../utils/dom.js';
+import { duplicateTest } from '../../utils/deduplication.js';
 
 /**
  * 转换、格式化和探测潜在文本元素（轻量格式）
@@ -67,10 +68,10 @@ export function processNode(elem, options) {
       return null;
     }
     
-    // TODO: 实现duplicate_test
-    // if (options.dedup && duplicateTest(elemCopy, options)) {
-    //   return null;
-    // }
+    // Python: options.dedup and duplicate_test(elem, options)
+    if (options && options.dedup && duplicateTest(elemCopy, options)) {
+      return null;
+    }
   }
   
   return elemCopy;
@@ -92,11 +93,8 @@ export function handleTextNode(elem, options, commentsFix = true, preserveSpaces
   }
   
   // Python: if elem.tag == "graphic" and is_image_element(elem):
-  if (elem.tagName.toLowerCase() === 'graphic') {
-    // TODO: 实现is_image_element检查
-    // if (isImageElement(elem)) {
+  if (elem.tagName.toLowerCase() === 'graphic' && isImageElement(elem)) {
     return elem;
-    // }
   }
   
   // Python: if elem.tag == "done" or (len(elem) == 0 and not elem.text and not elem.tail):
@@ -163,10 +161,10 @@ export function handleTextNode(elem, options, commentsFix = true, preserveSpaces
     return null;
   }
   
-  // TODO: 实现duplicate_test
-  // if (options.dedup && duplicateTest(elemCopy, options)) {
-  //   return null;
-  // }
+  // Python: options.dedup and duplicate_test(elem, options)
+  if (options && options.dedup && duplicateTest(elemCopy, options)) {
+    return null;
+  }
   
   return elemCopy;
 }
@@ -267,7 +265,14 @@ export function setElementText(elem, text) {
  * 对应Python的elem.tail
  */
 export function getElementTail(elem) {
-  if (!elem || !elem.nextSibling) return '';
+  if (!elem) return '';
+  
+  // 首先检查是否有临时存储的_tail属性
+  if (elem._tail !== undefined) {
+    return elem._tail;
+  }
+  
+  if (!elem.nextSibling) return '';
   
   const next = elem.nextSibling;
   if (next.nodeType === Node.TEXT_NODE) {
@@ -280,9 +285,23 @@ export function getElementTail(elem) {
 /**
  * 设置元素的tail内容
  * 对应Python的elem.tail = value
+ * 
+ * 注意：Python的lxml中，tail是元素的属性，可以在元素没有父节点时设置。
+ * 在浏览器DOM中，tail是作为兄弟文本节点存在的，需要父节点。
+ * 因此，如果元素没有父节点，我们使用自定义属性临时存储。
  */
 export function setElementTail(elem, text) {
   if (!elem) return;
+  
+  // 如果元素没有父节点，使用自定义属性临时存储
+  if (!elem.parentNode) {
+    if (text === null || text === '') {
+      delete elem._tail;
+    } else {
+      elem._tail = text;
+    }
+    return;
+  }
   
   const next = elem.nextSibling;
   
@@ -291,6 +310,7 @@ export function setElementTail(elem, text) {
     if (next && next.nodeType === Node.TEXT_NODE) {
       next.remove();
     }
+    delete elem._tail;
   } else {
     // 设置或创建tail文本节点
     if (next && next.nodeType === Node.TEXT_NODE) {
@@ -300,6 +320,27 @@ export function setElementTail(elem, text) {
       const textNode = document.createTextNode(text);
       elem.parentNode.insertBefore(textNode, next);
     }
+    delete elem._tail;
+  }
+}
+
+/**
+ * 将临时存储的_tail属性转换为真正的文本节点
+ * 应该在元素被添加到DOM后调用
+ */
+export function flushTail(elem) {
+  if (!elem || !elem._tail || !elem.parentNode) return;
+  
+  const tailText = elem._tail;
+  delete elem._tail;
+  
+  // 现在元素有父节点了，可以正常设置tail
+  const next = elem.nextSibling;
+  if (next && next.nodeType === Node.TEXT_NODE) {
+    next.textContent = tailText;
+  } else {
+    const textNode = document.createTextNode(tailText);
+    elem.parentNode.insertBefore(textNode, next);
   }
 }
 
@@ -319,6 +360,11 @@ function changeElementTag(elem, newTag) {
   // 复制属性
   for (const attr of elem.attributes) {
     newElem.setAttribute(attr.name, attr.value);
+  }
+  
+  // 复制_tail属性
+  if (elem._tail) {
+    newElem._tail = elem._tail;
   }
   
   // 替换

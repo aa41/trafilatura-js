@@ -7,7 +7,7 @@
  * @module extraction/comments
  */
 
-import { handleTextNode } from './handlers/node-processing.js';
+import { handleTextNode, flushTail } from './handlers/node-processing.js';
 import { deleteElement } from '../output/xml-processing.js';
 
 /**
@@ -217,6 +217,8 @@ export function extractComments(tree, options) {
         
         if (processedElem) {
           commentsBody.appendChild(processedElem);
+          // 刷新tail: 将临时存储的_tail转换为真正的文本节点
+          flushTail(processedElem);
         }
       }
       

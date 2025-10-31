@@ -13,7 +13,8 @@ import {
   processNode, 
   handleTextNode,
   setElementText,
-  setElementTail
+  setElementTail,
+  flushTail
 } from './node-processing.js';
 import { handleLists } from './lists.js';
 import { defineNewElem } from './utils.js';
@@ -153,6 +154,8 @@ export function handleTable(tableElem, potentialTags, options) {
             processedSubchild = handleLists(child, options);
             if (processedSubchild !== null) {
               newChildElem.appendChild(processedSubchild);
+              // 刷新tail: 将临时存储的_tail转换为真正的文本节点
+              flushTail(processedSubchild);
               processedSubchild = null; // 不再处理
             }
           } 
