@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trafilatura Browser - 测试套件</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+
+    .controls {
+      padding: 20px;
+      background: #f9f9f9;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background: #667eea;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    button.secondary {
+      background: #6c757d;
+    }
+
+    button.secondary:hover {
+      background: #5a6268;
+    }
+
+    .stats {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      display: block;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+      display: block;
+    }
+
+    .stat-value.success { color: #28a745; }
+    .stat-value.error { color: #dc3545; }
+    .stat-value.pending { color: #ffc107; }
+
+    .test-results {
+      padding: 20px;
+    }
+
+    .test-case {
+      margin-bottom: 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .test-case:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .test-header {
+      padding: 15px 20px;
+      background: #f8f9fa;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .test-header:hover {
+      background: #e9ecef;
+    }
+
+    .test-title {
+      font-weight: 600;
+      font-size: 1.1em;
+    }
+
+    .test-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-icon {
+      font-size: 24px;
+    }
+
+    .test-time {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .test-body {
+      padding: 20px;
+      display: none;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .test-body.expanded {
+      display: block;
+    }
+
+    .test-case.success {
+      border-left: 4px solid #28a745;
+    }
+
+    .test-case.error {
+      border-left: 4px solid #dc3545;
+    }
+
+    .test-case.running {
+      border-left: 4px solid #ffc107;
+    }
+
+    .result-section {
+      margin-bottom: 15px;
+    }
+
+    .result-label {
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #666;
+    }
+
+    .result-content {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .error-message {
+      color: #dc3545;
+      background: #f8d7da;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      opacity: 0.3;
+      margin-bottom: 20px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: #e0e0e0;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      width: 0%;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 Trafilatura Browser</h1>
+      <div class="subtitle">浏览器端内容提取测试套件</div>
+    </header>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress"></div>
+    </div>
+
+    <div class="controls">
+      <button onclick="runAllTests()" id="runAllBtn">
+        运行所有测试
+      </button>
+      <button class="secondary" onclick="runCategory('basic')">基础提取</button>
+      <button class="secondary" onclick="runCategory('metadata')">元数据</button>
+      <button class="secondary" onclick="runCategory('formatting')">格式化</button>
+      <button class="secondary" onclick="runCategory('advanced')">高级功能</button>
+      <button class="secondary" onclick="clearResults()">清空结果</button>
+
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-label">通过</span>
+          <span class="stat-value success" id="passedCount">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">失败</span>
+          <span class="stat-value error" id="failedCount">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">总计</span>
+          <span class="stat-value" id="totalCount">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-results" id="testResults">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p>点击"运行所有测试"开始测试</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 测试用例定义
+    const testCases = {
+      // ===== 基础提取测试 =====
+      basicExtraction: {
+        category: 'basic',
+        name: '基础文本提取',
+        description: '测试从简单HTML中提取纯文本',
+        html: `
+          <html>
+          <head><title>测试页面</title></head>
+          <body>
+            <header>页头导航</header>
+            <nav>导航菜单</nav>
+            <article>
+              <h1>文章标题</h1>
+              <p>这是第一段内容，包含一些文字。</p>
+              <p>这是第二段内容，也包含文字。</p>
+            </article>
+            <aside>侧边栏广告</aside>
+            <footer>页脚版权</footer>
+          </body>
+          </html>
+        `,
+        expected: {
+          contains: ['文章标题', '第一段内容', '第二段内容'],
+          notContains: ['页头导航', '导航菜单', '侧边栏广告', '页脚版权']
+        }
+      },
+
+      // ===== 元数据提取测试 =====
+      metadataBasic: {
+        category: 'metadata',
+        name: '基础元数据提取',
+        description: '测试从meta标签提取元数据',
+        html: `
+          <html>
+          <head>
+            <meta name="author" content="张三">
+            <meta name="description" content="这是一篇测试文章的描述">
+            <title>测试文章标题 - 网站名称</title>
+          </head>
+          <body>
+            <article><p>文章内容</p></article>
+          </body>
+          </html>
+        `,
+        options: { withMetadata: true, outputFormat: 'json' },
+        expected: {
+          metadata: {
+            author: '张三',
+            description: '这是一篇测试文章的描述'
+          }
+        }
+      },
+
+      metadataOpenGraph: {
+        category: 'metadata',
+        name: 'OpenGraph元数据提取',
+        description: '测试从OpenGraph标签提取元数据',
+        html: `
+          <html>
+          <head>
+            <meta property="og:title" content="OG标题">
+            <meta property="og:description" content="OG描述">
+            <meta property="og:author" content="李四">
+            <meta property="og:site_name" content="测试网站">
+          </head>
+          <body>
+            <article><p>内容</p></article>
+          </body>
+          </html>
+        `,
+        options: { withMetadata: true, outputFormat: 'json' },
+        expected: {
+          metadata: {
+            title: 'OG标题',
+            description: 'OG描述',
+            author: '李四',
+            sitename: '测试网站'
+          }
+        }
+      },
+
+      // ===== 格式化测试 =====
+      formattingMarkdown: {
+        category: 'formatting',
+        name: 'Markdown格式化',
+        description: '测试Markdown格式输出',
+        html: `
+          <html>
+          <body>
+            <article>
+              <h1>一级标题</h1>
+              <h2>二级标题</h2>
+              <p>包含<strong>粗体</strong>和<em>斜体</em>的段落</p>
+              <p>这里有一个<a href="https://example.com">链接</a></p>
+              <ul>
+                <li>列表项1</li>
+                <li>列表项2</li>
+              </ul>
+            </article>
+          </body>
+          </html>
+        `,
+        options: { outputFormat: 'markdown', formatting: true, links: true },
+        expected: {
+          contains: [
+            '# 一级标题',
+            '## 二级标题',
+            '**粗体**',
+            '*斜体*',
+            '[链接](https://example.com)',
+            '- 列表项1',
+            '- 列表项2'
+          ]
+        }
+      },
+
+      formattingTable: {
+        category: 'formatting',
+        name: '表格格式化',
+        description: '测试表格的Markdown输出',
+        html: `
+          <html>
+          <body>
+            <article>
+              <table>
+                <thead>
+                  <tr>
+                    <th>列1</th>
+                    <th>列2</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>数据1</td>
+                    <td>数据2</td>
+                  </tr>
+                  <tr>
+                    <td>数据3</td>
+                    <td>数据4</td>
+                  </tr>
+                </tbody>
+              </table>
+            </article>
+          </body>
+          </html>
+        `,
+        options: { outputFormat: 'markdown', tables: true },
+        expected: {
+          contains: ['列1', '列2', '数据1', '数据2', '---']
+        }
+      },
+
+      // ===== 高级功能测试 =====
+      advancedLinkDensity: {
+        category: 'advanced',
+        name: '链接密度过滤',
+        description: '测试链接密度算法过滤导航栏',
+        html: `
+          <html>
+          <body>
+            <nav>
+              <a href="#">链接1</a>
+              <a href="#">链接2</a>
+              <a href="#">链接3</a>
+              少量文本
+            </nav>
+            <article>
+              <p>这是一个包含大量文本的正常段落。
+              <a href="#">这里有一个链接</a>
+              但链接只占很小一部分。</p>
+            </article>
+          </body>
+          </html>
+        `,
+        expected: {
+          contains: ['正常段落', '链接只占很小一部分'],
+          notContains: ['链接1', '链接2', '链接3']
+        }
+      },
+
+      advancedNested: {
+        category: 'advanced',
+        name: '嵌套结构处理',
+        description: '测试复杂嵌套HTML结构',
+        html: `
+          <html>
+          <body>
+            <article>
+              <div class="content">
+                <section>
+                  <h2>章节标题</h2>
+                  <div class="text">
+                    <p>段落1</p>
+                    <div>
+                      <p>嵌套段落2</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </article>
+          </body>
+          </html>
+        `,
+        expected: {
+          contains: ['章节标题', '段落1', '嵌套段落2']
+        }
+      }
+    };
+
+    // 测试状态
+    let stats = {
+      passed: 0,
+      failed: 0,
+      total: 0
+    };
+
+    // 运行单个测试
+    async function runTest(testId, testCase) {
+      const startTime = performance.now();
+      
+      try {
+        // 检查Trafilatura是否已加载
+        if (typeof Trafilatura === 'undefined') {
+          throw new Error('Trafilatura库未加载！请先构建项目：npm run build');
+        }
+
+        // 运行提取
+        const options = testCase.options || {};
+        const result = Trafilatura.extract(testCase.html, options);
+        
+        // 验证结果
+        const errors = [];
+        
+        if (testCase.expected.contains) {
+          for (const text of testCase.expected.contains) {
+            if (!result.includes(text)) {
+              errors.push(`缺少期望文本: "${text}"`);
+            }
+          }
+        }
+        
+        if (testCase.expected.notContains) {
+          for (const text of testCase.expected.notContains) {
+            if (result.includes(text)) {
+              errors.push(`不应包含文本: "${text}"`);
+            }
+          }
+        }
+        
+        if (testCase.expected.metadata && typeof result === 'string') {
+          const parsed = JSON.parse(result);
+          for (const [key, value] of Object.entries(testCase.expected.metadata)) {
+            if (parsed[key] !== value) {
+              errors.push(`元数据不匹配: ${key} 期望"${value}", 实际"${parsed[key] || 'undefined'}"`);
+            }
+          }
+        }
+        
+        const endTime = performance.now();
+        const duration = (endTime - startTime).toFixed(2);
+        
+        if (errors.length === 0) {
+          stats.passed++;
+          return { success: true, result, duration };
+        } else {
+          stats.failed++;
+          return { success: false, result, errors, duration };
+        }
+        
+      } catch (error) {
+        stats.failed++;
+        const endTime = performance.now();
+        const duration = (endTime - startTime).toFixed(2);
+        return { 
+          success: false, 
+          error: error.message, 
+          stack: error.stack,
+          duration 
+        };
+      }
+    }
+
+    // 显示测试结果
+    function displayTestResult(testId, testCase, testResult) {
+      const resultsDiv = document.getElementById('testResults');
+      
+      // 移除空状态
+      const emptyState = resultsDiv.querySelector('.empty-state');
+      if (emptyState) emptyState.remove();
+      
+      const testDiv = document.createElement('div');
+      testDiv.className = `test-case ${testResult.success ? 'success' : 'error'}`;
+      testDiv.id = `test-${testId}`;
+      
+      const statusIcon = testResult.success ? '✅' : '❌';
+      
+      testDiv.innerHTML = `
+        <div class="test-header" onclick="toggleTestBody('${testId}')">
+          <div class="test-title">
+            <span class="status-icon">${statusIcon}</span>
+            ${testCase.name}
+          </div>
+          <div class="test-status">
+            <span class="test-time">${testResult.duration}ms</span>
+          </div>
+        </div>
+        <div class="test-body" id="body-${testId}">
+          <div class="result-section">
+            <div class="result-label">📝 描述</div>
+            <p>${testCase.description}</p>
+          </div>
+          
+          ${testResult.error ? `
+            <div class="error-message">
+              <strong>错误:</strong> ${testResult.error}
+              ${testResult.stack ? `<pre style="margin-top: 10px; font-size: 11px;">${testResult.stack}</pre>` : ''}
+            </div>
+          ` : ''}
+          
+          ${testResult.errors ? `
+            <div class="error-message">
+              <strong>验证失败:</strong>
+              <ul style="margin-top: 5px; padding-left: 20px;">
+                ${testResult.errors.map(e => `<li>${e}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          
+          <div class="result-section">
+            <div class="result-label">📤 提取结果</div>
+            <div class="result-content">${escapeHtml(testResult.result || '')}</div>
+          </div>
+          
+          <div class="result-section">
+            <div class="result-label">📥 输入HTML</div>
+            <div class="result-content">${escapeHtml(testCase.html)}</div>
+          </div>
+        </div>
+      `;
+      
+      resultsDiv.appendChild(testDiv);
+    }
+
+    // 切换测试详情展开/收起
+    function toggleTestBody(testId) {
+      const body = document.getElementById(`body-${testId}`);
+      body.classList.toggle('expanded');
+    }
+
+    // 更新统计
+    function updateStats() {
+      document.getElementById('passedCount').textContent = stats.passed;
+      document.getElementById('failedCount').textContent = stats.failed;
+      document.getElementById('totalCount').textContent = stats.total;
+      
+      const progress = stats.total > 0 ? (stats.passed + stats.failed) / stats.total * 100 : 0;
+      document.getElementById('progress').style.width = `${progress}%`;
+    }
+
+    // 运行所有测试
+    async function runAllTests() {
+      clearResults();
+      stats = { passed: 0, failed: 0, total: Object.keys(testCases).length };
+      updateStats();
+      
+      const runAllBtn = document.getElementById('runAllBtn');
+      runAllBtn.disabled = true;
+      runAllBtn.innerHTML = '<span class="loading"></span> 运行中...';
+      
+      for (const [testId, testCase] of Object.entries(testCases)) {
+        const result = await runTest(testId, testCase);
+        displayTestResult(testId, testCase, result);
+        updateStats();
+        await sleep(100); // 短暂延迟，让UI更新
+      }
+      
+      runAllBtn.disabled = false;
+      runAllBtn.textContent = '运行所有测试';
+    }
+
+    // 运行指定类别的测试
+    async function runCategory(category) {
+      clearResults();
+      
+      const filtered = Object.entries(testCases)
+        .filter(([_, test]) => test.category === category);
+      
+      stats = { passed: 0, failed: 0, total: filtered.length };
+      updateStats();
+      
+      for (const [testId, testCase] of filtered) {
+        const result = await runTest(testId, testCase);
+        displayTestResult(testId, testCase, result);
+        updateStats();
+        await sleep(100);
+      }
+    }
+
+    // 清空结果
+    function clearResults() {
+      const resultsDiv = document.getElementById('testResults');
+      resultsDiv.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p>等待测试运行...</p>
+        </div>
+      `;
+      stats = { passed: 0, failed: 0, total: 0 };
+      updateStats();
+    }
+
+    // 工具函数
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // 页面加载时检查库是否已加载
+    window.addEventListener('load', () => {
+      if (typeof Trafilatura === 'undefined') {
+        const resultsDiv = document.getElementById('testResults');
+        resultsDiv.innerHTML = `
+          <div class="error-message" style="margin: 20px;">
+            <h3>⚠️ Trafilatura库未加载</h3>
+            <p>请先构建项目:</p>
+            <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">npm run build</pre>
+            <p>然后在浏览器中打开此文件前，在HTML中添加:</p>
+            <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">&lt;script src="../../dist/trafilatura.browser.js"&gt;&lt;/script&gt;</pre>
+          </div>
+        `;
+      }
+    });
+  </script>
+  
+  
+    <!-- 注意: 在实际使用前，需要先构建项目并取消下面这行的注释 -->
+    <script src="../../dist/trafilatura.browser.js"></script>
+ 
+</body>
+</html>
+

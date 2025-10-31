@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Quick API Test</title>
+</head>
+<body>
+  <h1>Trafilatura API快速测试</h1>
+  <div id="result"></div>
+  
+  <script src="../../dist/trafilatura.browser.js"></script>
+  <script>
+    const resultDiv = document.getElementById('result');
+    
+    try {
+      // 检查Trafilatura对象
+      resultDiv.innerHTML += '<h2>1. 检查Trafilatura对象</h2>';
+      resultDiv.innerHTML += `<p>typeof Trafilatura: ${typeof Trafilatura}</p>`;
+      resultDiv.innerHTML += `<p>Trafilatura对象: ${Object.keys(Trafilatura).join(', ')}</p>`;
+      
+      // 检查extract函数
+      resultDiv.innerHTML += '<h2>2. 检查extract函数</h2>';
+      resultDiv.innerHTML += `<p>typeof Trafilatura.extract: ${typeof Trafilatura.extract}</p>`;
+      
+      // 测试提取
+      resultDiv.innerHTML += '<h2>3. 测试提取功能</h2>';
+      const testHtml = '<html><body><article><h1>测试标题</h1><p>测试内容</p></article></body></html>';
+      const result = Trafilatura.extract(testHtml);
+      resultDiv.innerHTML += `<p>提取结果类型: ${typeof result}</p>`;
+      resultDiv.innerHTML += `<p>提取结果内容: <pre>${result}</pre></p>`;
+      
+      resultDiv.innerHTML += '<h2>✅ 所有测试通过！</h2>';
+    } catch (error) {
+      resultDiv.innerHTML += `<h2>❌ 错误:</h2><p style="color: red;">${error.message}</p>`;
+      resultDiv.innerHTML += `<pre>${error.stack}</pre>`;
+    }
+  </script>
+</body>
+</html>
+
