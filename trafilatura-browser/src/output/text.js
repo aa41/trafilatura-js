@@ -54,11 +54,6 @@ export function replaceElementText(element, includeFormatting) {
     elemText = firstChild.textContent || '';
   }
   
-  // 如果没有直接文本，但是有子元素，我们需要所有文本
-  if (!elemText) {
-    elemText = element.textContent || '';
-  }
-  
   // 保存原始文本
   const originalText = elemText;
   

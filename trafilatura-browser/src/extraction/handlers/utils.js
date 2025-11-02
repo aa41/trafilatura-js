@@ -9,6 +9,7 @@
 import { textCharsTest } from '../../utils/text.js';
 import { copyAttributes } from '../../utils/dom.js';
 import { getElementText, setElementText, handleTextNode, flushTail } from './node-processing.js';
+import { handleLists } from './lists.js';
 
 /**
  * 添加子元素到现有子元素
@@ -67,8 +68,6 @@ export function processNestedElements(child, newChildElem, options) {
     // Python: if subelem.tag == "list":
     if (subelemTag === 'list') {
       // 导入会在运行时解决循环依赖
-      const { handleLists } = require('./lists.js');
-      
       // Python: processed_subchild = handle_lists(subelem, options)
       const processedSubchild = handleLists(subelem, options);
       

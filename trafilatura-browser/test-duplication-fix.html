@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文字重复问题修复验证</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 20px;
+    background: #f5f5f5;
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  
+  h1 {
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .subtitle {
+    color: #666;
+    margin-bottom: 30px;
+  }
+  
+  .section {
+    margin-bottom: 30px;
+  }
+  
+  .section h2 {
+    color: #444;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #667eea;
+  }
+  
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .stat-card {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 3px solid #667eea;
+  }
+  
+  .stat-label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 5px;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #667eea;
+  }
+  
+  .result-box {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .result-box pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  
+  .check-item {
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .check-item.success {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .check-item.warning {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  .check-item.error {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  
+  .icon {
+    font-size: 1.2rem;
+  }
+  
+  button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+  button:hover {
+    transform: translateY(-2px);
+  }
+  
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    color: #666;
+  }
+  
+  .loading.active {
+    display: block;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔧 文字重复问题修复验证</h1>
+  <p class="subtitle">测试修复后的Trafilatura是否还存在文字重复问题</p>
+  
+  <div class="section">
+    <h2>测试步骤</h2>
+    <button id="runTest" onclick="runTest()">开始测试</button>
+    <div id="loading" class="loading">正在测试...</div>
+  </div>
+  
+  <div id="results" style="display: none;">
+    <div class="section">
+      <h2>提取统计</h2>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">提取时间</div>
+          <div class="stat-value" id="extractTime">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">输出长度</div>
+          <div class="stat-value" id="outputLength">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">原文件长度</div>
+          <div class="stat-value" id="oldLength">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">长度变化</div>
+          <div class="stat-value" id="lengthChange">-</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="section">
+      <h2>重复检查结果</h2>
+      <div id="checkResults"></div>
+    </div>
+    
+    <div class="section">
+      <h2>提取结果预览（前1000字符）</h2>
+      <div class="result-box">
+        <pre id="resultPreview"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="dist/trafilatura.browser.js"></script>
+<script>
+async function runTest() {
+  const button = document.getElementById('runTest');
+  const loading = document.getElementById('loading');
+  const results = document.getElementById('results');
+  
+  button.disabled = true;
+  loading.classList.add('active');
+  results.style.display = 'none';
+  
+  try {
+    // 读取test.html
+    const response = await fetch('test.html');
+    const html = await response.text();
+    
+    console.log('HTML文件加载成功，大小:', (html.length / 1024).toFixed(2), 'KB');
+    
+    // 提取内容
+    const startTime = performance.now();
+    const result = Trafilatura.extract(html, {
+      format: 'markdown',
+      with_metadata: true,
+      include_images: true,
+      include_links: true,
+      include_formatting: true
+    });
+    const endTime = performance.now();
+    
+    if (!result) {
+      throw new Error('提取失败，返回null');
+    }
+    
+    // 显示统计
+    document.getElementById('extractTime').textContent = Math.round(endTime - startTime) + 'ms';
+    document.getElementById('outputLength').textContent = result.length.toLocaleString() + ' 字符';
+    
+    // 读取旧的test.md（如果存在）
+    try {
+      const oldMdResponse = await fetch('test.md');
+      const oldMd = await oldMdResponse.text();
+      document.getElementById('oldLength').textContent = oldMd.length.toLocaleString() + ' 字符';
+      const change = result.length - oldMd.length;
+      const changePercent = ((change / oldMd.length) * 100).toFixed(2);
+      document.getElementById('lengthChange').textContent = 
+        (change >= 0 ? '+' : '') + change.toLocaleString() + ' (' + changePercent + '%)';
+    } catch (e) {
+      document.getElementById('oldLength').textContent = 'N/A';
+      document.getElementById('lengthChange').textContent = 'N/A';
+    }
+    
+    // 检查重复
+    const checks = checkDuplication(result);
+    displayChecks(checks);
+    
+    // 显示预览
+    document.getElementById('resultPreview').textContent = result.substring(0, 1000) + '\n\n... (总共 ' + result.length + ' 字符)';
+    
+    results.style.display = 'block';
+    
+  } catch (error) {
+    console.error('测试失败:', error);
+    alert('测试失败: ' + error.message);
+  } finally {
+    button.disabled = false;
+    loading.classList.remove('active');
+  }
+}
+
+function checkDuplication(text) {
+  const checks = [];
+  
+  // 定义已知的重复模式
+  const patterns = [
+    { name: '本科录取名额', pattern: '本科录取名额预计为450万' },
+    { name: '高考报名人数', pattern: '2024年全国高考报名人数为1353万' },
+    { name: '双录取语言课程', pattern: '双录取语言课程' },
+    { name: '美国大学', pattern: '美国大学' },
+    { name: '陆本学生', pattern: '陆本学生' }
+  ];
+  
+  for (const { name, pattern } of patterns) {
+    // 检查连续重复（如 **text****text**）
+    const consecutiveRegex = new RegExp(`(\\*\\*${escapeRegex(pattern)}\\*\\*){2,}`, 'g');
+    const consecutiveMatches = text.match(consecutiveRegex);
+    
+    if (consecutiveMatches) {
+      checks.push({
+        name: name,
+        status: 'error',
+        message: `发现连续重复 ${consecutiveMatches.length} 次`
+      });
+      continue;
+    }
+    
+    // 检查总出现次数
+    const allMatches = text.match(new RegExp(escapeRegex(pattern), 'g'));
+    const count = allMatches ? allMatches.length : 0;
+    
+    if (count === 0) {
+      checks.push({
+        name: name,
+        status: 'warning',
+        message: '未找到该文本（可能不在测试HTML中）'
+      });
+    } else if (count === 1) {
+      checks.push({
+        name: name,
+        status: 'success',
+        message: '仅出现1次，无重复'
+      });
+    } else {
+      // 检查是否是合理的多次出现（相隔足够远）
+      const positions = [];
+      const regex = new RegExp(escapeRegex(pattern), 'g');
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        positions.push(match.index);
+      }
+      
+      // 检查是否有紧邻的重复（距离小于100字符）
+      let hasCloseRepeat = false;
+      for (let i = 1; i < positions.length; i++) {
+        if (positions[i] - positions[i-1] < 100) {
+          hasCloseRepeat = true;
+          break;
+        }
+      }
+      
+      if (hasCloseRepeat) {
+        checks.push({
+          name: name,
+          status: 'error',
+          message: `出现 ${count} 次，存在紧邻重复`
+        });
+      } else {
+        checks.push({
+          name: name,
+          status: 'success',
+          message: `出现 ${count} 次，但分布合理`
+        });
+      }
+    }
+  }
+  
+  return checks;
+}
+
+function displayChecks(checks) {
+  const container = document.getElementById('checkResults');
+  container.innerHTML = '';
+  
+  const icons = {
+    success: '✅',
+    warning: '⚠️',
+    error: '❌'
+  };
+  
+  for (const check of checks) {
+    const div = document.createElement('div');
+    div.className = `check-item ${check.status}`;
+    div.innerHTML = `
+      <span class="icon">${icons[check.status]}</span>
+      <strong>${check.name}:</strong>
+      <span>${check.message}</span>
+    `;
+    container.appendChild(div);
+  }
+  
+  // 总结
+  const errorCount = checks.filter(c => c.status === 'error').length;
+  const summary = document.createElement('div');
+  summary.className = `check-item ${errorCount === 0 ? 'success' : 'error'}`;
+  summary.style.marginTop = '15px';
+  summary.style.fontWeight = 'bold';
+  
+  if (errorCount === 0) {
+    summary.innerHTML = `
+      <span class="icon">🎉</span>
+      <span>测试通过！未发现文字重复问题，修复成功！</span>
+    `;
+  } else {
+    summary.innerHTML = `
+      <span class="icon">⚠️</span>
+      <span>发现 ${errorCount} 个重复问题，需要进一步检查。</span>
+    `;
+  }
+  
+  container.appendChild(summary);
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// 页面加载时显示准备状态
+window.addEventListener('load', () => {
+  console.log('Trafilatura版本:', Trafilatura.version || '1.0.0');
+  console.log('页面已准备就绪，点击"开始测试"按钮进行验证');
+});
+</script>
+</body>
+</html>
+

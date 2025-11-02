@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>文字重复问题诊断工具</title>
+<style>
+  body { font-family: monospace; padding: 20px; }
+  .section { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+  h2 { color: #333; }
+  pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+  .error { color: red; font-weight: bold; }
+  .success { color: green; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>文字重复问题诊断</h1>
+
+<div class="section">
+  <h2>测试1: 简单文本</h2>
+  <button onclick="test1()">运行测试1</button>
+  <pre id="test1-result"></pre>
+</div>
+
+<div class="section">
+  <h2>测试2: 嵌套格式化</h2>
+  <button onclick="test2()">运行测试2</button>
+  <pre id="test2-result"></pre>
+</div>
+
+<div class="section">
+  <h2>测试3: 知乎页面关键片段</h2>
+  <button onclick="test3()">运行测试3</button>
+  <pre id="test3-result"></pre>
+</div>
+
+<div class="section">
+  <h2>测试4: 完整test.html（JSON格式）</h2>
+  <button onclick="test4()">运行测试4</button>
+  <pre id="test4-result"></pre>
+</div>
+
+<div class="section">
+  <h2>测试5: 完整test.html（TXT格式）</h2>
+  <button onclick="test5()">运行测试5</button>
+  <pre id="test5-result"></pre>
+</div>
+
+<script src="dist/trafilatura.browser.js"></script>
+<script>
+function test1() {
+  const html = `
+    <html><body>
+      <p>这是一段简单的<strong>文本</strong>测试。</p>
+    </body></html>
+  `;
+  
+  const result = Trafilatura.extract(html, { format: 'txt' });
+  document.getElementById('test1-result').textContent = 
+    `输入: ${html}\n\n输出:\n${result}\n\n预期: "这是一段简单的文本测试。"`;
+  
+  if (result && result.includes('文本文本')) {
+    document.getElementById('test1-result').innerHTML += 
+      '<div class="error">❌ 发现重复！</div>';
+  } else {
+    document.getElementById('test1-result').innerHTML += 
+      '<div class="success">✅ 无重复</div>';
+  }
+}
+
+function test2() {
+  const html = `
+    <html><body>
+      <p><strong><em>嵌套格式</em>文本</strong>测试</p>
+    </body></html>
+  `;
+  
+  const result = Trafilatura.extract(html, { format: 'txt' });
+  document.getElementById('test2-result').textContent = 
+    `输入: ${html}\n\n输出:\n${result}\n\n预期: "嵌套格式文本测试"`;
+  
+  if (result && (result.match(/嵌套格式/g) || []).length > 1) {
+    document.getElementById('test2-result').innerHTML += 
+      '<div class="error">❌ 发现"嵌套格式"重复！</div>';
+  }
+  if (result && (result.match(/文本/g) || []).length > 1) {
+    document.getElementById('test2-result').innerHTML += 
+      '<div class="error">❌ 发现"文本"重复！</div>';
+  }
+  if (!result || (!result.includes('嵌套格式嵌套格式') && !result.includes('文本文本'))) {
+    document.getElementById('test2-result').innerHTML += 
+      '<div class="success">✅ 无明显重复</div>';
+  }
+}
+
+function test3() {
+  // 从test.html中提取的关键片段
+  const html = `
+    <html><body>
+      <article>
+        <p><strong>本科录取名额预计为450万</strong></p>
+        <p><strong>2024年全国高考报名人数为1353万</strong>，比2023年多出62万人。</p>
+      </article>
+    </body></html>
+  `;
+  
+  const result = Trafilatura.extract(html, { format: 'txt' });
+  document.getElementById('test3-result').textContent = 
+    `输出:\n${result}`;
+  
+  const count450 = (result.match(/本科录取名额预计为450万/g) || []).length;
+  const count1353 = (result.match(/2024年全国高考报名人数为1353万/g) || []).length;
+  
+  document.getElementById('test3-result').innerHTML += 
+    `\n\n"本科录取名额"出现次数: ${count450}` +
+    `\n"高考报名人数"出现次数: ${count1353}`;
+  
+  if (count450 > 1 || count1353 > 1) {
+    document.getElementById('test3-result').innerHTML += 
+      '<div class="error">❌ 发现重复！</div>';
+  } else {
+    document.getElementById('test3-result').innerHTML += 
+      '<div class="success">✅ 无重复</div>';
+  }
+}
+
+async function test4() {
+  try {
+    const response = await fetch('test.html');
+    const html = await response.text();
+    
+    const result = Trafilatura.extract(html, { format: 'json', with_metadata: true });
+    
+    if (!result) {
+      document.getElementById('test4-result').textContent = '提取失败！';
+      return;
+    }
+    
+    const data = typeof result === 'string' ? JSON.parse(result) : result;
+    const text = data.text || data.raw_text || '';
+    
+    document.getElementById('test4-result').textContent = 
+      `输出长度: ${text.length} 字符\n\n` +
+      `前500字符:\n${text.substring(0, 500)}`;
+    
+    // 检查已知的重复模式
+    const count450 = (text.match(/本科录取名额预计为450万/g) || []).length;
+    const count1353 = (text.match(/2024年全国高考报名人数为1353万/g) || []).length;
+    
+    document.getElementById('test4-result').innerHTML += 
+      `\n\n"本科录取名额"出现: ${count450}次` +
+      `\n"高考报名人数"出现: ${count1353}次`;
+    
+    if (count450 > 1 || count1353 > 1) {
+      document.getElementById('test4-result').innerHTML += 
+        '<div class="error">❌ JSON格式仍有重复！</div>';
+    } else {
+      document.getElementById('test4-result').innerHTML += 
+        '<div class="success">✅ JSON格式无重复</div>';
+    }
+  } catch (e) {
+    document.getElementById('test4-result').textContent = '错误: ' + e.message;
+  }
+}
+
+async function test5() {
+  try {
+    const response = await fetch('test.html');
+    const html = await response.text();
+    
+    const result = Trafilatura.extract(html, { format: 'txt' });
+    
+    if (!result) {
+      document.getElementById('test5-result').textContent = '提取失败！';
+      return;
+    }
+    
+    document.getElementById('test5-result').textContent = 
+      `输出长度: ${result.length} 字符\n\n` +
+      `前500字符:\n${result.substring(0, 500)}`;
+    
+    // 检查已知的重复模式
+    const count450 = (result.match(/本科录取名额预计为450万/g) || []).length;
+    const count1353 = (result.match(/2024年全国高考报名人数为1353万/g) || []).length;
+    
+    document.getElementById('test5-result').innerHTML += 
+      `\n\n"本科录取名额"出现: ${count450}次` +
+      `\n"高考报名人数"出现: ${count1353}次`;
+    
+    if (count450 > 1 || count1353 > 1) {
+      document.getElementById('test5-result').innerHTML += 
+        '<div class="error">❌ TXT格式仍有重复！</div>';
+    } else {
+      document.getElementById('test5-result').innerHTML += 
+        '<div class="success">✅ TXT格式无重复</div>';
+    }
+  } catch (e) {
+    document.getElementById('test5-result').textContent = '错误: ' + e.message;
+  }
+}
+</script>
+</body>
+</html>
+

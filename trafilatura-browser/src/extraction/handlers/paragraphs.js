@@ -44,11 +44,10 @@ export function handleParagraphs(element, potentialTags, options) {
   const processedElement = document.createElement(element.tagName.toLowerCase());
   
   // Python: for child in element.iter("*"):
+  // element.iter("*") 遍历所有后代元素（包括子元素、孙元素等）
+  // querySelectorAll('*') 已经返回所有后代元素，不需要再添加 element.children
+  // ⚠️ 之前的错误：将 element.children 再次 unshift 导致元素被处理两次，造成文本重复！
   const children = Array.from(element.querySelectorAll('*'));
-  // 直接子元素
-  for (const child of element.children) {
-    children.unshift(child);
-  }
   
   for (const child of children) {
     const childTag = child.tagName.toLowerCase();

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>检查提取后的XML结构</title>
+<style>
+  body { font-family: monospace; padding: 20px; }
+  textarea { width: 100%; height: 400px; font-family: monospace; }
+  button { padding: 10px 20px; font-size: 16px; margin: 10px 0; }
+  pre { background: #f5f5f5; padding: 15px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+  .section { margin: 20px 0; }
+</style>
+</head>
+<body>
+<h1>检查提取后的XML结构</h1>
+
+<div class="section">
+  <h2>输入HTML</h2>
+  <textarea id="input">
+<html><body>
+<p><strong>本科录取名额预计为450万</strong></p>
+<p><strong>2024年全国高考报名人数为1353万</strong>，比2023年多出62万人。</p>
+</body></html>
+  </textarea>
+</div>
+
+<button onclick="extractAndInspect()">提取并检查XML</button>
+<button onclick="loadTestHtml()">加载test.html</button>
+
+<div class="section">
+  <h2>提取后的XML结构</h2>
+  <pre id="xml-output"></pre>
+</div>
+
+<div class="section">
+  <h2>文本输出（检查重复）</h2>
+  <pre id="text-output"></pre>
+</div>
+
+<script src="dist/trafilatura.browser.js"></script>
+<script>
+function extractAndInspect() {
+  const html = document.getElementById('input').value;
+  
+  // 使用bareExtraction获取Document对象
+  const doc = Trafilatura.bareExtraction(html, {
+    include_images: true,
+    include_links: true,
+    include_formatting: true
+  });
+  
+  if (!doc || !doc.body) {
+    document.getElementById('xml-output').textContent = '提取失败！';
+    return;
+  }
+  
+  // 显示XML结构
+  const xmlStr = new XMLSerializer().serializeToString(doc.body);
+  document.getElementById('xml-output').textContent = formatXml(xmlStr);
+  
+  // 显示文本输出
+  const txtResult = Trafilatura.extract(html, { format: 'txt' });
+  const mdResult = Trafilatura.extract(html, { format: 'markdown' });
+  
+  document.getElementById('text-output').textContent = 
+    `TXT格式:\n${txtResult}\n\n` +
+    `Markdown格式:\n${mdResult}\n\n` +
+    `检查重复:\n` +
+    checkDuplication(txtResult, '本科录取名额预计为450万') + '\n' +
+    checkDuplication(txtResult, '2024年全国高考报名人数为1353万');
+}
+
+async function loadTestHtml() {
+  try {
+    const response = await fetch('test.html');
+    const html = await response.text();
+    document.getElementById('input').value = html.substring(0, 5000) + '\n\n... (截断)';
+    extractAndInspect();
+  } catch (e) {
+    alert('加载test.html失败: ' + e.message);
+  }
+}
+
+function checkDuplication(text, pattern) {
+  const matches = text.match(new RegExp(escapeRegex(pattern), 'g'));
+  const count = matches ? matches.length : 0;
+  
+  if (count === 0) {
+    return `"${pattern}" - 未找到`;
+  } else if (count === 1) {
+    return `"${pattern}" - 出现1次 ✅`;
+  } else {
+    return `"${pattern}" - 出现${count}次 ❌ 重复！`;
+  }
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function formatXml(xml) {
+  let formatted = '';
+  let indent = '';
+  xml.split(/>\s*</).forEach(node => {
+    if (node.match(/^\/\w/)) indent = indent.substring(2);
+    formatted += indent + '<' + node + '>\n';
+    if (node.match(/^<?\w[^>]*[^\/]$/)) indent += '  ';
+  });
+  return formatted.substring(1, formatted.length - 2);
+}
+</script>
+</body>
+</html>
+

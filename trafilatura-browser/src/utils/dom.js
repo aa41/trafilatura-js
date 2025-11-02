@@ -214,6 +214,13 @@ export function stripTags(tree, ...tags) {
 
     // 移除空元素
     parent.removeChild(element);
+    
+    // ⚠️ 关键修复：合并连续的文本节点
+    // 当stripTags移除元素后，可能产生多个连续的文本节点
+    // 例如: <hi>A<item>B</item>C</hi> 变成 <hi>textNode:A textNode:B textNode:C</hi>
+    // 如果不合并，getElementText只会获取第一个textNode，导致文本在后续处理中重复出现
+    // normalize()会将连续的文本节点合并为一个
+    parent.normalize();
   });
 }
 

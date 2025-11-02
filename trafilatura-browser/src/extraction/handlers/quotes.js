@@ -113,22 +113,11 @@ export function handleQuotes(element, options) {
   const processedElement = document.createElement(element.tagName.toLowerCase());
   
   // Python: for child in element.iter("*"):
-  // 注意：Python的iter("*")包括元素本身和所有后代
-  const children = [];
-  
-  // 如果元素没有子元素，需要处理元素本身
-  if (element.children.length === 0) {
-    children.push(element);
-  } else {
-    // 获取所有后代元素
-    children.push(...Array.from(element.querySelectorAll('*')));
-    // 也包括直接子元素（确保顺序）
-    for (const child of element.children) {
-      if (!children.includes(child)) {
-        children.unshift(child);
-      }
-    }
-  }
+  // element.iter("*") 遍历所有后代元素
+  // querySelectorAll('*') 已经返回所有后代元素，不需要再添加 element.children
+  const children = element.children.length === 0 
+    ? [element]  // 如果没有子元素，处理元素本身
+    : Array.from(element.querySelectorAll('*'));
   
   for (const child of children) {
     // Python: processed_child = process_node(child, options)

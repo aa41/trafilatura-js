@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>追踪调试 - 查找重复源头</title>
+<style>
+  body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+  .step { 
+    margin: 20px 0; 
+    padding: 20px; 
+    background: white; 
+    border-left: 4px solid #667eea;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  h2 { color: #667eea; margin-top: 0; }
+  pre { 
+    background: #2d2d2d; 
+    color: #f8f8f2; 
+    padding: 15px; 
+    overflow-x: auto; 
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .highlight { background: yellow; color: black; padding: 2px 4px; }
+  .error { color: #e74c3c; font-weight: bold; }
+  .success { color: #27ae60; font-weight: bold; }
+  button { 
+    background: #667eea; 
+    color: white; 
+    border: none; 
+    padding: 12px 24px; 
+    font-size: 16px; 
+    border-radius: 4px; 
+    cursor: pointer; 
+  }
+  button:hover { background: #5568d3; }
+</style>
+</head>
+<body>
+<h1>🔍 追踪调试 - 查找重复源头</h1>
+<button onclick="startDebug()">开始调试</button>
+<div id="output"></div>
+
+<script src="dist/trafilatura.browser.js"></script>
+<script>
+function startDebug() {
+  const output = document.getElementById('output');
+  output.innerHTML = '';
+  
+  const html = `
+    <html><body>
+      <article>
+        <p><strong>本科录取名额预计为450万</strong></p>
+        <p><strong>2024年全国高考报名人数为1353万</strong>，比2023年多出62万人。</p>
+      </article>
+    </body></html>
+  `;
+  
+  addStep('📥 步骤1: 输入HTML', html);
+  
+  // 使用bareExtraction获取Document对象
+  const doc = Trafilatura.bareExtraction(html, {
+    include_formatting: true,
+    include_links: true
+  });
+  
+  if (!doc || !doc.body) {
+    addStep('❌ 错误', '提取失败', true);
+    return;
+  }
+  
+  // 序列化XML查看结构
+  const xmlStr = new XMLSerializer().serializeToString(doc.body);
+  addStep('📋 步骤2: 提取后的XML结构', formatXml(xmlStr));
+  
+  // 分析body结构
+  let analysis = '';
+  analysis += `Body标签: <${doc.body.tagName}>\n`;
+  analysis += `Body子元素数量: ${doc.body.children.length}\n\n`;
+  
+  // 遍历所有子元素
+  for (let i = 0; i < doc.body.children.length; i++) {
+    const child = doc.body.children[i];
+    analysis += analyzeElement(child, 0);
+  }
+  
+  addStep('🔍 步骤3: 结构分析', analysis);
+  
+  // 收集所有文本
+  const allTexts = [];
+  collectTexts(doc.body, allTexts);
+  
+  let textAnalysis = '提取到的所有文本片段：\n\n';
+  allTexts.forEach((text, index) => {
+    textAnalysis += `${index + 1}. "${text}"\n`;
+  });
+  
+  addStep('📝 步骤4: 所有文本片段', textAnalysis);
+  
+  // 测试不同格式
+  const txtResult = Trafilatura.extract(html, { format: 'txt' });
+  addStep('📄 步骤5: TXT输出', txtResult || '(空)');
+  
+  const mdResult = Trafilatura.extract(html, { format: 'markdown' });
+  addStep('📄 步骤6: Markdown输出', mdResult || '(空)');
+  
+  // 检查重复
+  const pattern1 = '本科录取名额预计为450万';
+  const pattern2 = '2024年全国高考报名人数为1353万';
+  
+  const count1 = (txtResult.match(new RegExp(escapeRegex(pattern1), 'g')) || []).length;
+  const count2 = (txtResult.match(new RegExp(escapeRegex(pattern2), 'g')) || []).length;
+  
+  let result = `检查结果：\n\n`;
+  result += `"${pattern1}" 出现次数: ${count1}\n`;
+  result += `"${pattern2}" 出现次数: ${count2}\n\n`;
+  
+  if (count1 > 1 || count2 > 1) {
+    result += '❌ 发现重复！\n\n';
+    
+    // 分析重复位置
+    result += '重复位置分析：\n';
+    const lines = txtResult.split('\n');
+    lines.forEach((line, i) => {
+      if (line.includes(pattern1)) {
+        result += `第${i+1}行包含"本科录取名额": ${line}\n`;
+      }
+      if (line.includes(pattern2)) {
+        result += `第${i+1}行包含"高考报名人数": ${line}\n`;
+      }
+    });
+  } else {
+    result += '✅ 无重复！修复成功！';
+  }
+  
+  addStep(count1 > 1 || count2 > 1 ? '❌ 步骤7: 检查结果' : '✅ 步骤7: 检查结果', result, count1 > 1 || count2 > 1);
+}
+
+function analyzeElement(elem, level) {
+  const indent = '  '.repeat(level);
+  let result = '';
+  
+  result += `${indent}<${elem.tagName.toLowerCase()}`;
+  
+  // 显示属性
+  if (elem.attributes.length > 0) {
+    for (const attr of elem.attributes) {
+      result += ` ${attr.name}="${attr.value}"`;
+    }
+  }
+  result += '>\n';
+  
+  // 显示直接文本内容（第一个文本节点）
+  const firstChild = elem.firstChild;
+  if (firstChild && firstChild.nodeType === Node.TEXT_NODE) {
+    const text = firstChild.textContent.trim();
+    if (text) {
+      result += `${indent}  [text] "${text}"\n`;
+    }
+  }
+  
+  // 显示所有文本节点
+  let textNodeCount = 0;
+  for (const node of elem.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      textNodeCount++;
+      const text = node.textContent.trim();
+      if (text) {
+        result += `${indent}  [textNode${textNodeCount}] "${text}"\n`;
+      }
+    }
+  }
+  
+  // 递归处理子元素
+  for (const child of elem.children) {
+    result += analyzeElement(child, level + 1);
+  }
+  
+  // 检查tail（nextSibling文本节点）
+  if (elem.nextSibling && elem.nextSibling.nodeType === Node.TEXT_NODE) {
+    const tail = elem.nextSibling.textContent.trim();
+    if (tail) {
+      result += `${indent}  [tail] "${tail}"\n`;
+    }
+  }
+  
+  result += `${indent}</${elem.tagName.toLowerCase()}>\n`;
+  
+  return result;
+}
+
+function collectTexts(elem, texts) {
+  // 收集当前元素的文本
+  for (const node of elem.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent.trim();
+      if (text) {
+        texts.push(text);
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      collectTexts(node, texts);
+    }
+  }
+}
+
+function addStep(title, content, isError = false) {
+  const output = document.getElementById('output');
+  const step = document.createElement('div');
+  step.className = 'step';
+  
+  const titleElem = document.createElement('h2');
+  titleElem.innerHTML = title;
+  
+  const contentElem = document.createElement('pre');
+  contentElem.textContent = content;
+  
+  step.appendChild(titleElem);
+  step.appendChild(contentElem);
+  output.appendChild(step);
+}
+
+function formatXml(xml) {
+  let formatted = '';
+  let indent = '';
+  const tab = '  ';
+  
+  xml.split(/>\s*</).forEach((node, index) => {
+    if (node.match(/^\/\w/)) {
+      indent = indent.substring(tab.length);
+    }
+    
+    formatted += indent;
+    if (index > 0) formatted += '<';
+    formatted += node;
+    if (index < xml.split(/>\s*</).length - 1) formatted += '>';
+    formatted += '\n';
+    
+    if (node.match(/^<?\w[^>]*[^\/]$/) && !node.startsWith('/')) {
+      indent += tab;
+    }
+  });
+  
+  return formatted;
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+</script>
+</body>
+</html>
+

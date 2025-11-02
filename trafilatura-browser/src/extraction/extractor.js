@@ -38,6 +38,7 @@ import {
   handleImage,
   flushTail
 } from './handlers/index.js';
+import { Extractor } from '../settings/extractor.js';
 
 // ============================================================================
 // 常量定义 - 对应Python: main_extractor.py:31-36
@@ -110,6 +111,14 @@ function logEvent(msg, tag, text) {
  */
 export function handleTextElem(element, potentialTags, options) {
   if (!element) {
+    return null;
+  }
+  
+  // ⚠️ 关键检查：如果元素已经被标记为"done"，跳过处理
+  // Python: if element.tag == "done": return None
+  // 这防止已经在父元素中处理过的子元素被重复处理
+  const tagName = element.tagName.toLowerCase();
+  if (tagName === 'done' || element.getAttribute('data-done') === 'true') {
     return null;
   }
   
@@ -551,6 +560,7 @@ export default {
   extractContent,
   handleTextElem,
   pruneUnwantedSections,
-  recoverWildText
+  recoverWildText,
+  Extractor
 };
 

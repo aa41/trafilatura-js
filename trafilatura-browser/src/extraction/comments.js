@@ -126,15 +126,19 @@ function stripTags(subtree, tagNames) {
     const elements = Array.from(subtree.querySelectorAll(tagName));
     
     for (const elem of elements) {
+      const parent = elem.parentNode;
+      if (!parent) continue;
+      
       // 将所有子节点移动到父节点
       while (elem.firstChild) {
-        elem.parentNode.insertBefore(elem.firstChild, elem);
+        parent.insertBefore(elem.firstChild, elem);
       }
       
       // 删除空元素
-      if (elem.parentNode) {
-        elem.parentNode.removeChild(elem);
-      }
+      parent.removeChild(elem);
+      
+      // ⚠️ 关键修复：合并连续的文本节点，避免文字重复
+      parent.normalize();
     }
   }
 }

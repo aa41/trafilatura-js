@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>深度诊断 - 追踪重复来源</title>
+<style>
+  body { font-family: monospace; padding: 20px; }
+  pre { background: #f5f5f5; padding: 10px; overflow-x: auto; white-space: pre-wrap; }
+  .step { margin: 20px 0; padding: 15px; border: 2px solid #333; }
+  .error { color: red; font-weight: bold; }
+  .success { color: green; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>深度诊断 - 追踪每一步</h1>
+
+<button onclick="runDeepDiagnose()">开始深度诊断</button>
+<div id="output"></div>
+
+<script src="dist/trafilatura.browser.js"></script>
+<script>
+function runDeepDiagnose() {
+  const output = document.getElementById('output');
+  output.innerHTML = '';
+  
+  // 简单的测试HTML
+  const html = `
+    <html><body>
+      <p><strong>本科录取名额预计为450万</strong></p>
+    </body></html>
+  `;
+  
+  addStep('步骤1: 输入HTML', html);
+  
+  // 使用bareExtraction获取中间结果
+  const doc = Trafilatura.bareExtraction(html, {
+    include_formatting: true,
+    include_links: true
+  });
+  
+  if (!doc || !doc.body) {
+    addStep('错误', '提取失败，doc.body为空', true);
+    return;
+  }
+  
+  // 检查XML结构
+  const xmlStr = new XMLSerializer().serializeToString(doc.body);
+  addStep('步骤2: 提取后的XML结构', xmlStr);
+  
+  // 分析body的子元素
+  let analysis = 'Body子元素数量: ' + doc.body.children.length + '\n\n';
+  for (let i = 0; i < doc.body.children.length; i++) {
+    const child = doc.body.children[i];
+    analysis += `子元素${i+1}: <${child.tagName}>\n`;
+    analysis += `  - textContent: "${child.textContent}"\n`;
+    analysis += `  - 子元素数量: ${child.children.length}\n`;
+    
+    if (child.children.length > 0) {
+      for (let j = 0; j < child.children.length; j++) {
+        const subchild = child.children[j];
+        analysis += `    - 子元素${j+1}: <${subchild.tagName}>\n`;
+        analysis += `      textContent: "${subchild.textContent}"\n`;
+        
+        // 检查文本节点
+        let textNodeCount = 0;
+        for (let node of subchild.childNodes) {
+          if (node.nodeType === Node.TEXT_NODE) {
+            textNodeCount++;
+            analysis += `      文本节点${textNodeCount}: "${node.textContent}"\n`;
+          }
+        }
+      }
+    }
+  }
+  addStep('步骤3: XML结构分析', analysis);
+  
+  // 检查不同格式的输出
+  const txtResult = Trafilatura.extract(html, { format: 'txt' });
+  addStep('步骤4: TXT格式输出', txtResult);
+  
+  const mdResult = Trafilatura.extract(html, { format: 'markdown' });
+  addStep('步骤5: Markdown格式输出', mdResult);
+  
+  const jsonResult = Trafilatura.extract(html, { format: 'json' });
+  const jsonData = typeof jsonResult === 'string' ? JSON.parse(jsonResult) : jsonResult;
+  addStep('步骤6: JSON格式输出', JSON.stringify(jsonData, null, 2));
+  
+  // 检查重复
+  const count = (txtResult.match(/本科录取名额预计为450万/g) || []).length;
+  if (count > 1) {
+    addStep('结果', `❌ 在TXT格式中发现${count}次重复！`, true);
+  } else {
+    addStep('结果', '✅ 未发现重复', false);
+  }
+}
+
+function addStep(title, content, isError = false) {
+  const output = document.getElementById('output');
+  const step = document.createElement('div');
+  step.className = 'step';
+  
+  const titleElem = document.createElement('h3');
+  titleElem.textContent = title;
+  if (isError) titleElem.className = 'error';
+  
+  const contentElem = document.createElement('pre');
+  contentElem.textContent = content;
+  
+  step.appendChild(titleElem);
+  step.appendChild(contentElem);
+  output.appendChild(step);
+}
+</script>
+</body>
+</html>
+
